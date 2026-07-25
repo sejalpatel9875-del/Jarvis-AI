@@ -3,8 +3,8 @@ Purpose:
 Defines execution state models, capabilities, and data structures for the Planner Agent System.
 
 Responsibilities:
-- PlanStep and PlanModel dataclasses
-- StepStatus and PlanStatus state machine enums
+- PlanStep, PlanModel, and ExecutionEvent dataclasses
+- StepStatus, PlanStatus, Priority, and Capability enums
 - Capability definitions for capability-based tool selection
 
 Dependencies:
@@ -32,6 +32,12 @@ class StepStatus(str, Enum):
     RETRYING = "RETRYING"
     SKIPPED = "SKIPPED"
 
+class Priority(int, Enum):
+    LOW = 1
+    NORMAL = 2
+    HIGH = 3
+    CRITICAL = 4
+
 class Capability(str, Enum):
     MATH = "math"
     WEB_SEARCH = "web_search"
@@ -39,6 +45,12 @@ class Capability(str, Enum):
     SYSTEM_CONTROL = "system_control"
     MUSIC_PLAYBACK = "music_playback"
     DOCUMENT_READ = "document_read"
+
+@dataclass
+class ExecutionEvent:
+    event_type: str                                # STARTED | RETRYING | SUCCESS | FAILED | SKIPPED
+    message: str
+    timestamp: str = field(default_factory=lambda: datetime.datetime.now().strftime("%H:%M:%S"))
 
 @dataclass
 class PlanStep:
@@ -55,10 +67,15 @@ class PlanStep:
     estimated_cost: float = 0.0                    # API cost estimate
     estimated_latency: float = 0.0                 # Latency estimate in seconds
     retries: int = 0                               # Retries attempted (max 2)
+    history: List[ExecutionEvent] = field(default_factory=list)
 
     def is_ready(self, completed_step_numbers: List[int]) -> bool:
         """Returns True if all preceding step dependencies are met."""
         return all(dep_id in completed_step_numbers for dep_id in self.depends_on)
+
+    def log_event(self, event_type: str, message: str):
+        """Appends an ExecutionEvent entry to step history."""
+        self.history.append(ExecutionEvent(event_type=event_type, message=message))
 
 @dataclass
 class PlanModel:
@@ -66,6 +83,7 @@ class PlanModel:
     steps: List[PlanStep] = field(default_factory=list)
     plan_id: str = field(default_factory=lambda: str(uuid.uuid4())[:8])
     status: PlanStatus = PlanStatus.PENDING
+    priority: Priority = Priority.NORMAL
     current_step_index: int = 0
     final_response: Optional[str] = None
     created_at: str = field(default_factory=lambda: datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))

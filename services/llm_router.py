@@ -1,12 +1,30 @@
+"""
+Purpose:
+Intelligent Decision Engine & Fallback Router for Jarvis AI Services.
+
+Responsibilities:
+- Classify queries into Casual vs Complex/Coding
+- Smart Routing: Casual -> Groq, Complex/Coding -> Gemini
+- Internet connectivity check (Online -> Cloud APIs, Offline -> Ollama)
+- Multi-provider fallback chain (Groq <-> Gemini <-> Ollama)
+
+Dependencies:
+- services/groq.py
+- services/gemini.py
+- services/ollama.py
+- memory/database.py
+"""
+
 import os
 import time
-import requests
-import config
+import socket
+from services.groq import GroqService
 from services.gemini import GeminiService
 from services.ollama import OllamaService
 from memory.database import log_conversation_turn
 
-import socket
+LOGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
+os.makedirs(LOGS_DIR, exist_ok=True)
 
 def is_internet_available(timeout: float = 0.8) -> bool:
     """Fast socket check to determine if internet connection is live."""
@@ -16,16 +34,6 @@ def is_internet_available(timeout: float = 0.8) -> bool:
         return True
     except Exception:
         return False
-
-# HTTP Session Connection Pool for persistent TCP connections (< 0.5s response speed)
-_http_session = requests.Session()
-_http_session.headers.update({
-    "Connection": "keep-alive",
-    "Accept-Encoding": "gzip, deflate"
-})
-
-LOGS_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "logs")
-os.makedirs(LOGS_DIR, exist_ok=True)
 
 def log_interaction(provider: str, model: str, latency: float, prompt: str, response: str):
     """Logs interaction telemetry entry to logs/YYYY-MM-DD.log."""
@@ -50,11 +58,26 @@ def log_interaction(provider: str, model: str, latency: float, prompt: str, resp
         print(f"[Logging Error] Failed to write daily log: {e}")
 
 class LLMRouter:
-    """Multi-Provider AI Router (Online: Gemini/Groq -> Offline: Ollama)."""
+    """
+    Intelligent Decision Engine & Multi-Provider Router.
+    Routes queries dynamically based on complexity and connectivity.
+    """
     def __init__(self):
-        self.groq_key = getattr(config, "GROQ_API_KEY", "")
+        self.groq_service = GroqService()
         self.gemini_service = GeminiService()
         self.ollama_service = OllamaService()
+
+    def classify_query(self, prompt: str) -> str:
+        """Classifies prompt as 'Casual' (Fast response) or 'Complex' (Deep reasoning/Coding)."""
+        text = prompt.lower().strip()
+        words = text.split()
+        complex_keywords = [
+            "code", "python", "script", "api", "function", "write a", "explain in detail",
+            "architecture", "refactor", "debug", "compare", "solution", "database", "algorithm"
+        ]
+        if len(words) > 12 or any(kw in text for kw in complex_keywords):
+            return "Complex"
+        return "Casual"
 
     def print_provider_monitor(self, provider: str, model: str, latency: float, approx_tokens: int, fallback: bool = False, prompt: str = "", response: str = ""):
         print("-" * 60)
@@ -68,63 +91,55 @@ class LLMRouter:
         log_interaction(provider, model, latency, prompt, response)
         log_conversation_turn(prompt, response, provider, latency)
 
-    def route_and_ask(self, prompt: str, system_instruction: str, history: list) -> str:
+    def route_and_ask(self, prompt: str, system_instruction: str = "", history: list = None) -> str:
         """
-        Executes LLM call following priority sequence:
-        If Internet Online  -> Gemini Cloud API / Groq
-        Else (Offline)     -> Ollama Local AI
+        Intelligent Routing Flow:
+        1. Check Internet Connectivity (Online vs Offline)
+        2. Classify Query (Casual -> Groq, Complex -> Gemini)
+        3. Execute with Automatic Provider Fallback Chain
         """
+        hist = history if history is not None else []
         online = is_internet_available()
+        query_type = self.classify_query(prompt)
         
         if online:
-            # 1. Primary Cloud: Groq AI (< 0.3s speed)
-            if self.groq_key and self.groq_key != "your_groq_api_key_here":
-                model = "llama-3.1-8b-instant"
-                url = "https://api.groq.com/openai/v1/chat/completions"
-                headers = {
-                    "Authorization": f"Bearer {self.groq_key}",
-                    "Content-Type": "application/json"
-                }
-                messages = [{"role": "system", "content": system_instruction}]
-                for h in history[-2:]:
-                    messages.append(h)
-                messages.append({"role": "user", "content": prompt})
-                
-                payload = {
-                    "model": model,
-                    "messages": messages,
-                    "temperature": 0.5,
-                    "max_tokens": 180
-                }
-                try:
-                    start_t = time.time()
-                    res = _http_session.post(url, headers=headers, json=payload, timeout=6)
-                    elapsed = time.time() - start_t
-                    if res.status_code == 200:
-                        reply = res.json()["choices"][0]["message"]["content"].strip()
-                        approx_tokens = len(prompt.split()) + len(reply.split()) + 50
-                        self.print_provider_monitor("Groq", model, elapsed, approx_tokens, fallback=False, prompt=prompt, response=reply)
-                        print(f"Jarvis: '{reply}'")
-                        return reply
-                except Exception as ex:
-                    print(f"[Groq Exception] {ex}")
-
-            # 2. Gemini Cloud API
-            if self.gemini_service.api_key:
+            if query_type == "Complex":
+                # Route Complex/Coding queries to Gemini first
                 start_t = time.time()
                 ok_gem, reply_gem = self.gemini_service.ask(prompt, system_instruction=system_instruction)
                 elapsed = time.time() - start_t
                 if ok_gem:
                     model = getattr(self.gemini_service, 'active_model', 'gemini-3.1-flash-lite')
                     approx_tokens = len(prompt.split()) + len(reply_gem.split()) + 50
-                    self.print_provider_monitor("Gemini", model, elapsed, approx_tokens, fallback=True, prompt=prompt, response=reply_gem)
+                    self.print_provider_monitor("Gemini (Cloud)", model, elapsed, approx_tokens, fallback=False, prompt=prompt, response=reply_gem)
                     print(f"Jarvis: '{reply_gem}'")
                     return reply_gem
 
-        # 3. Offline / Tertiary: Ollama Local AI
-        print("[LLM Router] Offline mode or Cloud API unavailable. Using Local Ollama AI...")
-        messages_ol = [{"role": "system", "content": system_instruction}]
-        for h in history[-2:]:
+            # Primary for Casual or Fallback for Complex: Groq AI
+            ok_groq, reply_groq, elapsed = self.groq_service.ask(prompt, system_instruction=system_instruction, history=hist)
+            if ok_groq:
+                approx_tokens = len(prompt.split()) + len(reply_groq.split()) + 50
+                fallback_flag = (query_type == "Complex")
+                self.print_provider_monitor("Groq (Ultra-Fast)", self.groq_service.model, elapsed, approx_tokens, fallback=fallback_flag, prompt=prompt, response=reply_groq)
+                print(f"Jarvis: '{reply_groq}'")
+                return reply_groq
+
+            # Fallback to Gemini if Groq was unavailable
+            if query_type == "Casual":
+                start_t = time.time()
+                ok_gem, reply_gem = self.gemini_service.ask(prompt, system_instruction=system_instruction)
+                elapsed = time.time() - start_t
+                if ok_gem:
+                    model = getattr(self.gemini_service, 'active_model', 'gemini-3.1-flash-lite')
+                    approx_tokens = len(prompt.split()) + len(reply_gem.split()) + 50
+                    self.print_provider_monitor("Gemini (Cloud)", model, elapsed, approx_tokens, fallback=True, prompt=prompt, response=reply_gem)
+                    print(f"Jarvis: '{reply_gem}'")
+                    return reply_gem
+
+        # Offline / Tertiary Fallback: Ollama Local AI
+        print("[LLM Router] Offline mode or Cloud API unavailable. Routing to Local Ollama AI...")
+        messages_ol = [{"role": "system", "content": system_instruction or "You are Jarvis AI."}]
+        for h in hist[-2:]:
             messages_ol.append(h)
         messages_ol.append({"role": "user", "content": prompt})
         
@@ -137,10 +152,9 @@ class LLMRouter:
 
         return "Sorry Boss, please add a free Groq or Gemini API key in your .env file or run Ollama locally."
 
+# Global Router Instance
 _global_router = LLMRouter()
 
 def ask_ai(user_message: str, system_instruction: str = "", history: list = None) -> str:
-    """Standalone function to query multi-provider AI engine."""
-    sys_inst = system_instruction or "You are Jarvis AI."
-    hist = history if history is not None else []
-    return _global_router.route_and_ask(user_message, sys_inst, hist)
+    """Standalone function to query Intelligent Decision Engine."""
+    return _global_router.route_and_ask(user_message, system_instruction=system_instruction, history=history)

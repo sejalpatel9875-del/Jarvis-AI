@@ -1,27 +1,36 @@
 """
 Purpose:
-Acts as the public interface for Jarvis Memory.
+Acts as the public interface for Jarvis Memory Engine.
 
 Responsibilities:
-- Save conversations
-- Load recent history
-- Manage user preferences
+- Thread-safe Singleton instance management
+- In-memory preference caching for fast O(1) lookups
+- Save conversations and load history
+- Public bridge between Brain and Storage layer
 
 Dependencies:
 - storage.py
+- models.py
 """
 
+import threading
 from typing import List, Optional
 import memory.storage as storage
 from memory.models import ConversationModel, PreferenceModel
 
 class MemoryManager:
     """
-    Public interface for Jarvis Memory Engine.
-    Connects Brain to Memory Storage API.
+    Public interface for Jarvis Memory Engine with Singleton pattern and In-Memory Caching.
     """
-    def __init__(self):
-        pass
+    _instance = None
+    _lock = threading.Lock()
+
+    def __new__(cls):
+        with cls._lock:
+            if cls._instance is None:
+                cls._instance = super(MemoryManager, cls).__new__(cls)
+                cls._instance._pref_cache = {}
+            return cls._instance
 
     def save_turn(self, user_message: str, assistant_reply: str, provider: str = "Groq") -> ConversationModel:
         """Saves a conversation turn into persistent memory."""
@@ -36,12 +45,21 @@ class MemoryManager:
         return storage.search_history(query, limit=limit)
 
     def save_preference(self, key: str, value: str):
-        """Saves or updates a user preference in persistent storage."""
-        storage.save_preference(key, value)
+        """Saves a preference in persistent storage and updates local cache."""
+        clean_key = key.strip().lower()
+        clean_val = value.strip()
+        storage.save_preference(clean_key, clean_val)
+        self._pref_cache[clean_key] = clean_val
 
     def get_preference(self, key: str, default: str = "") -> str:
-        """Retrieves a user preference from persistent storage."""
-        return storage.get_preference(key, default=default)
+        """Retrieves a preference (hits in-memory cache first, falls back to SQLite)."""
+        clean_key = key.strip().lower()
+        if clean_key in self._pref_cache:
+            return self._pref_cache[clean_key]
+            
+        val = storage.get_preference(clean_key, default=default)
+        self._pref_cache[clean_key] = val
+        return val
 
 # Global MemoryManager Singleton Instance
 _default_manager = MemoryManager()

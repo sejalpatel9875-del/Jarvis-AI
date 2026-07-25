@@ -35,6 +35,9 @@ def init_db():
             )
         """)
         
+        # 2. Performance Index on Timestamp
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_timestamp ON conversations(timestamp);")
+        
         # 2. Preferences Table
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS preferences (

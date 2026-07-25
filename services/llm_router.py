@@ -118,3 +118,11 @@ class LLMRouter:
             return reply_ol
 
         return "Sorry Boss, please add a free Groq or Gemini API key in your .env file or run Ollama locally."
+
+_global_router = LLMRouter()
+
+def ask_ai(user_message: str, system_instruction: str = "", history: list = None) -> str:
+    """Standalone function to query multi-provider AI engine."""
+    sys_inst = system_instruction or "You are Jarvis AI."
+    hist = history if history is not None else []
+    return _global_router.route_and_ask(user_message, sys_inst, hist)

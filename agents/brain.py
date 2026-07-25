@@ -1,6 +1,6 @@
 import re
 import agents.memory as memory_agent
-from services.llm_router import LLMRouter
+from services.llm_router import ask_ai
 
 def parse_action_tags(response_text: str) -> tuple[list, str]:
     """Parses prefix tags like [ACTION: play_music | perfect] and returns actions & clean text."""
@@ -18,10 +18,9 @@ def parse_action_tags(response_text: str) -> tuple[list, str]:
         
     return actions, clean_text.strip()
 
-class AgentBrain:
+class JarvisBrain:
     """AI Orchestrator Agent."""
     def __init__(self):
-        self.llm_router = LLMRouter()
         self.conversation_history = []
 
     def get_system_instruction(self) -> str:
@@ -45,14 +44,14 @@ class AgentBrain:
             "shutdown_pc (none), restart_pc (none), sleep_pc (none), cancel_shutdown (none)."
         )
 
-    def process(self, user_text: str) -> tuple[str, list]:
-        """Processes user input, auto-learns facts, queries LLM Router, and extracts action tags."""
+    def think(self, user_message: str) -> tuple[str, list]:
+        """Processes user message through multi-provider AI engine via ask_ai."""
         # 1. Auto-learn memory facts from input
-        memory_agent.auto_learn_from_input(user_text)
+        memory_agent.auto_learn_from_input(user_message)
         
-        # 2. Get response from multi-provider LLM Router
+        # 2. Get response from multi-provider LLM Router via ask_ai
         sys_inst = self.get_system_instruction()
-        raw_reply = self.llm_router.route_and_ask(user_text, sys_inst, self.conversation_history)
+        raw_reply = ask_ai(user_message, system_instruction=sys_inst, history=self.conversation_history)
         
         # 3. Parse action tags
         actions, clean_text = parse_action_tags(raw_reply)
@@ -60,7 +59,13 @@ class AgentBrain:
         if not clean_text or clean_text.startswith("[ACTION:"):
             clean_text = f"Sure {memory_agent.get_user_title()}, executing your command now."
             
-        self.conversation_history.append({"role": "user", "content": user_text})
+        self.conversation_history.append({"role": "user", "content": user_message})
         self.conversation_history.append({"role": "assistant", "content": clean_text})
         
         return clean_text, actions
+
+    def process(self, user_message: str):
+        return self.think(user_message)
+
+# Legacy alias compatibility
+AgentBrain = JarvisBrain

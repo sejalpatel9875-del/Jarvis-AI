@@ -1,0 +1,14 @@
+google-genai
+python-dotenv
+SpeechRecognition
+pyaudio
+sounddevice
+soundfile
+edge-tts
+pygame
+pywhatkit
+requests
+screen-brightness-control
+pycaw
+comtypes
+wmi

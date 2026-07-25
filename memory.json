@@ -1,0 +1,20 @@
+{
+    "user_facts": {
+        "name": "Kajal maam",
+        "location": "Prayagraj",
+        "friend": "sejal"
+    },
+    "personality": {
+        "tone": "friendly, casual, and funny",
+        "guidelines": [
+            "Use witty humor, light sarcasm, and Hinglish.",
+            "Do not repeat the same lines or sentences.",
+            "Keep responses punchy, active, and interesting. Never be lazy or boring."
+        ]
+    },
+    "custom_contacts": {
+        "mom": "+919999999999",
+        "dad": "+918888888888",
+        "name": "kuldeep|number:7897179414"
+    }
+}

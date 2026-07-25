@@ -1,0 +1,21 @@
+# Environment Variables & Secrets
+.env
+.env.local
+
+# Virtual Environment
+.venv/
+env/
+venv/
+
+# Caches & Temporary Files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.vscode/
+.idea/
+
+# Runtime Telemetry Logs & Transient Short Memory
+logs/
+memory/short_memory.json

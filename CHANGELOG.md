@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.5.0] - 2026-07-25 (STABLE RELEASE)
+
+### ✨ Added
+- **Autonomous Planner Agent ([agents/planner.py](file:///c:/Users/Aryan/Documents/jarvis/agents/planner.py))**: Master orchestrator connecting Reasoner -> Executor -> Validator -> Final LLM Synthesis.
+- Full `JarvisBrain` integration delegating user goals to PlannerAgent.
+- End-to-end automated test suite in `tests/test_planner.py`.
+
+---
+
 ## [v1.5.0-alpha4] - 2026-07-25
 
 ### ✨ Added

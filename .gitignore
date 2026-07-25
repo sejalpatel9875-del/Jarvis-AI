@@ -16,6 +16,8 @@ __pycache__/
 .vscode/
 .idea/
 
-# Runtime Telemetry Logs & Transient Short Memory
+# Runtime Telemetry Logs, SQLite Databases & Transient Memory
 logs/
+*.db
+memory/*.db
 memory/short_memory.json

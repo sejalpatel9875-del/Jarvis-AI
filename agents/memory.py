@@ -1,6 +1,27 @@
 import re
 import memory.database as db
 
+# In-Memory Buffer
+memory = []
+
+def save(message):
+    """Saves a message into memory array and logs turn into SQLite DB."""
+    memory.append(message)
+    try:
+        if isinstance(message, dict):
+            u_msg = message.get("user", "") or message.get("content", "")
+            a_msg = message.get("assistant", "") or message.get("response", "")
+            if u_msg or a_msg:
+                db.log_conversation_turn(str(u_msg), str(a_msg))
+        else:
+            db.log_conversation_turn(str(message), "")
+    except Exception:
+        pass
+
+def history():
+    """Returns the in-memory conversation history list."""
+    return memory
+
 def get_user_title() -> str:
     """Returns the user's title (e.g. 'Boss')."""
     return db.get_profile_value("user_name", "Boss") or "Boss"

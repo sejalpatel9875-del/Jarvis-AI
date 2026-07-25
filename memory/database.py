@@ -1,5 +1,6 @@
 import os
 import sqlite3
+import datetime
 
 DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jarvis.db")
 
@@ -52,9 +53,15 @@ def init_db():
 init_db()
 
 def log_conversation_turn(user_msg: str, assistant_reply: str, provider: str = "Groq", latency: float = 0.0):
-    """Compatibility helper writing turn into SQLite conversations table."""
+    """Compatibility helper writing turn directly into SQLite conversations table without circular imports."""
     try:
-        import memory.storage as storage
-        storage.save_conversation(user_msg, assistant_reply, provider=provider)
+        conn = get_connection()
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        conn.execute(
+            "INSERT INTO conversations (timestamp, user_message, assistant_reply, provider) VALUES (?, ?, ?, ?)",
+            (timestamp, user_msg, assistant_reply, provider)
+        )
+        conn.commit()
+        conn.close()
     except Exception as e:
         print(f"[Database Error] Failed to log turn: {e}")

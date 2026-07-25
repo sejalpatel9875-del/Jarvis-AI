@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.5.0-alpha4] - 2026-07-25
+
+### ✨ Added
+- **Result Validator & Goal Verifier ([agents/validator.py](file:///c:/Users/Aryan/Documents/jarvis/agents/validator.py))**: Decoupled goal verification engine.
+- Structured `ValidationResult` with `is_valid`, `completion_rate`, `missing_requirements`, and recommendations (`APPROVE`, `RE_PLAN`, `PARTIAL_SUCCESS`).
+- Automated unit test suite in `tests/test_validator.py`.
+
+---
+
 ## [v1.5.0-alpha3] - 2026-07-25
 
 ### ✨ Added

@@ -1,5 +1,5 @@
 import re
-import memory.storage as storage
+from memory.manager import MemoryManager
 import agents.memory as memory_agent
 from services.llm_router import ask_ai
 
@@ -38,10 +38,10 @@ class JarvisBrain:
     Flow: Receive Prompt -> Load Memory -> Choose LLM -> Generate Reply -> Save Conversation -> Return Response
     """
     def __init__(self):
-        pass
+        self.memory_manager = MemoryManager()
 
     def get_system_instruction(self) -> str:
-        user_title = storage.get_preference("user_name", "Boss")
+        user_title = self.memory_manager.get_preference("user_name", "Boss")
         memory_context = memory_agent.get_memory_context()
         
         return (
@@ -65,19 +65,19 @@ class JarvisBrain:
 
     def think(self, user_message: str) -> tuple[str, list]:
         """
-        Orchestrates full Brain Flow:
+        Orchestrates full Brain Flow via memory.manager:
         1. Receive Prompt
         2. Load Memory (recent SQLite turns + preferences)
         3. Choose LLM (Multi-Provider AI Router)
         4. Generate Reply
-        5. Save Conversation into SQLite DB
+        5. Save Conversation into SQLite DB via memory_manager
         6. Return Response
         """
         # 1. Auto-learn memory facts from input
         memory_agent.auto_learn_from_input(user_message)
         
-        # 2. Load Memory Context from SQLite
-        recent_turns = storage.load_recent(limit=3)
+        # 2. Load Memory Context from SQLite via MemoryManager
+        recent_turns = self.memory_manager.get_recent(limit=3)
         history_list = []
         for turn in recent_turns:
             history_list.append({"role": "user", "content": turn.user_message})
@@ -91,11 +91,11 @@ class JarvisBrain:
         # Parse action tags
         actions, clean_text = parse_action_tags(raw_reply)
         if not clean_text or clean_text.startswith("[ACTION:"):
-            user_title = storage.get_preference("user_name", "Boss")
+            user_title = self.memory_manager.get_preference("user_name", "Boss")
             clean_text = f"Sure {user_title}, executing your command now."
             
-        # 5. Save Conversation to SQLite Memory Engine
-        storage.save_conversation(user_message, clean_text, provider="Groq")
+        # 5. Save Conversation via MemoryManager
+        self.memory_manager.save_turn(user_message, clean_text, provider="Groq")
         memory_agent.save({"user": user_message, "assistant": clean_text})
         
         # 6. Return Response

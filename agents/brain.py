@@ -1,4 +1,5 @@
 import re
+import memory.storage as storage
 import agents.memory as memory_agent
 from services.llm_router import ask_ai
 
@@ -32,12 +33,15 @@ def parse_action_tags(response_text: str) -> tuple[list, str]:
     return actions, clean_text
 
 class JarvisBrain:
-    """AI Orchestrator Agent."""
+    """
+    AI Orchestrator Brain for Jarvis.
+    Flow: Receive Prompt -> Load Memory -> Choose LLM -> Generate Reply -> Save Conversation -> Return Response
+    """
     def __init__(self):
-        self.conversation_history = []
+        pass
 
     def get_system_instruction(self) -> str:
-        user_title = memory_agent.get_user_title()
+        user_title = storage.get_preference("user_name", "Boss")
         memory_context = memory_agent.get_memory_context()
         
         return (
@@ -46,7 +50,7 @@ class JarvisBrain:
             "FLUENCY & SPEECH RULES:\n"
             "1. Speak in clean, natural Hinglish (conversational blend of Hindi and English).\n"
             "2. If any technical phrase or explanation sounds awkward in Hindi, USE ENGLISH naturally instead.\n"
-            "3. Ensure 100% perfect grammar and natural sentence flow. NEVER produce literal broken Hindi translations (e.g. NEVER say 'Main tumhare service mein hai').\n"
+            "3. Ensure 100% perfect grammar and natural sentence flow. NEVER produce literal broken Hindi translations.\n"
             f"4. Keep responses crisp, polite, and confident (max 1-2 short sentences). {memory_context}\n\n"
             "COMMAND RULES: Prepend action tag(s) at start if user asks to open/search/send:\n"
             "[ACTION: <intent> | <arg>]\n"
@@ -60,23 +64,41 @@ class JarvisBrain:
         )
 
     def think(self, user_message: str) -> tuple[str, list]:
-        """Processes user message through multi-provider AI engine via ask_ai."""
+        """
+        Orchestrates full Brain Flow:
+        1. Receive Prompt
+        2. Load Memory (recent SQLite turns + preferences)
+        3. Choose LLM (Multi-Provider AI Router)
+        4. Generate Reply
+        5. Save Conversation into SQLite DB
+        6. Return Response
+        """
         # 1. Auto-learn memory facts from input
         memory_agent.auto_learn_from_input(user_message)
         
-        # 2. Get response from multi-provider LLM Router via ask_ai
-        sys_inst = self.get_system_instruction()
-        raw_reply = ask_ai(user_message, system_instruction=sys_inst, history=self.conversation_history)
-        
-        # 3. Parse action tags
-        actions, clean_text = parse_action_tags(raw_reply)
-        
-        if not clean_text or clean_text.startswith("[ACTION:"):
-            clean_text = f"Sure {memory_agent.get_user_title()}, executing your command now."
+        # 2. Load Memory Context from SQLite
+        recent_turns = storage.load_recent(limit=3)
+        history_list = []
+        for turn in recent_turns:
+            history_list.append({"role": "user", "content": turn.user_message})
+            history_list.append({"role": "assistant", "content": turn.assistant_reply})
             
-        self.conversation_history.append({"role": "user", "content": user_message})
-        self.conversation_history.append({"role": "assistant", "content": clean_text})
+        sys_inst = self.get_system_instruction()
         
+        # 3 & 4. Choose LLM & Generate Reply
+        raw_reply = ask_ai(user_message, system_instruction=sys_inst, history=history_list)
+        
+        # Parse action tags
+        actions, clean_text = parse_action_tags(raw_reply)
+        if not clean_text or clean_text.startswith("[ACTION:"):
+            user_title = storage.get_preference("user_name", "Boss")
+            clean_text = f"Sure {user_title}, executing your command now."
+            
+        # 5. Save Conversation to SQLite Memory Engine
+        storage.save_conversation(user_message, clean_text, provider="Groq")
+        memory_agent.save({"user": user_message, "assistant": clean_text})
+        
+        # 6. Return Response
         return clean_text, actions
 
     def process(self, user_message: str):

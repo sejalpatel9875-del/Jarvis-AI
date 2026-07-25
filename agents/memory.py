@@ -1,5 +1,6 @@
 import re
 import memory.database as db
+import memory.storage as storage
 
 # In-Memory Buffer
 memory = []
@@ -12,9 +13,9 @@ def save(message):
             u_msg = message.get("user", "") or message.get("content", "")
             a_msg = message.get("assistant", "") or message.get("response", "")
             if u_msg or a_msg:
-                db.log_conversation_turn(str(u_msg), str(a_msg))
+                storage.save_conversation(str(u_msg), str(a_msg))
         else:
-            db.log_conversation_turn(str(message), "")
+            storage.save_conversation(str(message), "")
     except Exception:
         pass
 
@@ -24,35 +25,32 @@ def history():
 
 def get_user_title() -> str:
     """Returns the user's title (e.g. 'Boss')."""
-    return db.get_profile_value("user_name", "Boss") or "Boss"
+    return storage.get_preference("user_name", "Boss") or "Boss"
 
 def get_assistant_name() -> str:
     """Returns the assistant's name (e.g. 'Jarvis')."""
-    return db.get_profile_value("assistant_name", "Jarvis") or "Jarvis"
+    return storage.get_preference("assistant_name", "Jarvis") or "Jarvis"
 
 def update_profile(key: str, value: str):
-    """Updates a profile entry in SQLite database."""
-    db.set_profile_value(key, value)
-    print(f"[Memory Agent] Updated profile: {key} = {value}")
+    """Updates a preference entry in SQLite database."""
+    storage.save_preference(key, value)
+    print(f"[Memory Agent] Updated preference: {key} = {value}")
 
 def remember_fact(key: str, value: str):
-    """Saves a learned fact into long-term memory."""
-    db.save_user_fact(key, value)
+    """Saves a learned fact into preferences memory."""
+    storage.save_preference(key, value)
     print(f"[Memory Agent] Learned & Persisted: {key} = {value}")
     return f"Remembered {key} = {value}, Boss."
 
 def forget_fact(key: str):
-    """Removes a fact from long-term memory."""
-    facts = db.get_all_user_facts()
+    """Removes a fact from preference memory."""
+    conn = db.get_connection()
     clean_key = key.strip().lower()
-    if clean_key in facts:
-        conn = db.get_connection()
-        conn.execute("DELETE FROM user_facts WHERE fact_key = ?", (clean_key,))
-        conn.commit()
-        conn.close()
-        print(f"[Memory Agent] Forgot fact: {clean_key}")
-        return f"Forgot {clean_key}, Boss."
-    return f"No record found for {clean_key}, Boss."
+    conn.execute("DELETE FROM preferences WHERE key = ?", (clean_key,))
+    conn.commit()
+    conn.close()
+    print(f"[Memory Agent] Forgot fact: {clean_key}")
+    return f"Forgot {clean_key}, Boss."
 
 def auto_learn_from_input(user_text: str) -> list:
     """Automatically detects personal facts, contacts, and profile changes from user input."""
@@ -74,20 +72,11 @@ def auto_learn_from_input(user_text: str) -> list:
         name = m.group(1).strip().capitalize()
         update_profile("user_name", name)
         learned.append(("profile", f"user_name = {name}"))
-    
-    # "save contact X Y" / "contact X Y"
-    m = re.search(r'(?:save\s+)?contact\s+(\w+)\s+(\+?\d[\d\s\-]{8,})', text_lower)
-    if m:
-        name = m.group(1).strip()
-        number = m.group(2).strip()
-        db.save_contact(name, number)
-        learned.append(("add_contact", f"{name} = {number}"))
         
     return learned
 
 def get_memory_context() -> str:
     """Returns formatted memory string for AI system instruction."""
     user_title = get_user_title()
-    facts = db.get_all_user_facts()
-    facts_str = ", ".join([f"{k}: {v}" for k, v in facts.items()])
-    return f"User Title: {user_title}\nSaved Facts: [{facts_str}]" if facts_str else f"User Title: {user_title}"
+    lang = storage.get_preference("language", "Hinglish")
+    return f"User Title: {user_title}\nPreferred Language: {lang}"

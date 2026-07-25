@@ -4,18 +4,16 @@ from memory.database import get_connection
 from memory.models import ConversationModel, PreferenceModel
 
 def save_conversation(user_message: str, assistant_reply: str, provider: str = "Groq") -> ConversationModel:
-    """Saves a conversation turn into SQLite conversations table."""
-    conn = get_connection()
+    """Saves a conversation turn into SQLite conversations table using context manager."""
     timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    cursor = conn.cursor()
-    cursor.execute(
-        "INSERT INTO conversations (timestamp, user_message, assistant_reply, provider) VALUES (?, ?, ?, ?)",
-        (timestamp, user_message, assistant_reply, provider)
-    )
-    conv_id = cursor.lastrowid
-    conn.commit()
-    conn.close()
-    
+    with get_connection() as conn:
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO conversations (timestamp, user_message, assistant_reply, provider) VALUES (?, ?, ?, ?)",
+            (timestamp, user_message, assistant_reply, provider)
+        )
+        conv_id = cursor.lastrowid
+        
     return ConversationModel(
         id=conv_id,
         timestamp=timestamp,
@@ -25,15 +23,14 @@ def save_conversation(user_message: str, assistant_reply: str, provider: str = "
     )
 
 def load_recent(limit: int = 10) -> List[ConversationModel]:
-    """Loads the most recent conversation turns from database."""
-    conn = get_connection()
-    rows = conn.execute(
-        "SELECT id, timestamp, user_message, assistant_reply, provider FROM conversations ORDER BY id DESC LIMIT ?",
-        (limit,)
-    ).fetchall()
-    conn.close()
-    
-    result = [
+    """Loads the most recent conversation turns from database using context manager."""
+    with get_connection() as conn:
+        rows = conn.execute(
+            "SELECT id, timestamp, user_message, assistant_reply, provider FROM conversations ORDER BY id DESC LIMIT ?",
+            (limit,)
+        ).fetchall()
+        
+    return [
         ConversationModel(
             id=row["id"],
             timestamp=row["timestamp"],
@@ -42,21 +39,19 @@ def load_recent(limit: int = 10) -> List[ConversationModel]:
             provider=row["provider"]
         ) for row in reversed(rows)
     ]
-    return result
 
 def search_history(query: str, limit: int = 10) -> List[ConversationModel]:
-    """Searches past conversation history by keyword matching."""
-    conn = get_connection()
+    """Searches past conversation history by keyword matching using context manager."""
     search_pattern = f"%{query.strip()}%"
-    rows = conn.execute(
-        """SELECT id, timestamp, user_message, assistant_reply, provider 
-           FROM conversations 
-           WHERE user_message LIKE ? OR assistant_reply LIKE ? 
-           ORDER BY id DESC LIMIT ?""",
-        (search_pattern, search_pattern, limit)
-    ).fetchall()
-    conn.close()
-    
+    with get_connection() as conn:
+        rows = conn.execute(
+            """SELECT id, timestamp, user_message, assistant_reply, provider 
+               FROM conversations 
+               WHERE user_message LIKE ? OR assistant_reply LIKE ? 
+               ORDER BY id DESC LIMIT ?""",
+            (search_pattern, search_pattern, limit)
+        ).fetchall()
+        
     return [
         ConversationModel(
             id=row["id"],
@@ -68,18 +63,16 @@ def search_history(query: str, limit: int = 10) -> List[ConversationModel]:
     ]
 
 def save_preference(key: str, value: str):
-    """Saves or updates a user preference in SQLite database."""
-    conn = get_connection()
-    conn.execute(
-        "INSERT OR REPLACE INTO preferences (key, value) VALUES (?, ?)",
-        (key.strip().lower(), value.strip())
-    )
-    conn.commit()
-    conn.close()
+    """Saves or updates a user preference in SQLite database using context manager."""
+    with get_connection() as conn:
+        conn.execute(
+            "INSERT OR REPLACE INTO preferences (key, value) VALUES (?, ?)",
+            (key.strip().lower(), value.strip())
+        )
 
 def get_preference(key: str, default: str = "") -> str:
-    """Retrieves a user preference from SQLite database."""
-    conn = get_connection()
-    row = conn.execute("SELECT value FROM preferences WHERE key = ?", (key.strip().lower(),)).fetchone()
-    conn.close()
+    """Retrieves a user preference from SQLite database using context manager."""
+    with get_connection() as conn:
+        row = conn.execute("SELECT value FROM preferences WHERE key = ?", (key.strip().lower(),)).fetchone()
+        
     return row["value"] if row else default

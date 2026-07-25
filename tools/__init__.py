@@ -7,3 +7,4 @@ import tools.music
 import tools.search
 import tools.system
 import tools.browser
+import tools.document

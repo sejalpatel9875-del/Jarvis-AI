@@ -45,13 +45,15 @@ class ReasonerEngine:
                 capabilities.add(Capability.SYSTEM_CONTROL.value)
             elif name == "music":
                 capabilities.add(Capability.MUSIC_PLAYBACK.value)
+            elif name == "document":
+                capabilities.add(Capability.DOCUMENT_READ.value)
         return list(capabilities)
 
     def is_casual_query(self, goal: str) -> bool:
         """Determines if the goal is a casual single-turn query."""
         text = goal.strip().lower()
         words = text.split()
-        if len(words) <= 5 and not any(kw in text for kw in ["search", "download", "calculate", "open", "play", "scrape", "write"]):
+        if len(words) <= 5 and not any(kw in text for kw in ["search", "download", "calculate", "open", "play", "scrape", "write", "pdf", "document"]):
             return True
         return False
 
@@ -77,8 +79,36 @@ class ReasonerEngine:
         steps: List[PlanStep] = []
 
         # 2. Rule-Based & Semantic Capability Parsing
+        # Document RAG detection
+        if any(kw in goal_lower for kw in [".pdf", ".docx", "document", "read file", "page ", "index pdf", "summarize pdf"]):
+            filepath_match = re.search(r'([\w\:\/\\\.\-]+\.(?:pdf|docx|txt|md|csv|log))', goal_text, flags=re.IGNORECASE)
+            filepath = filepath_match.group(1) if filepath_match else ""
+            
+            if "index" in goal_lower or ("read" in goal_lower and filepath):
+                steps.append(
+                    PlanStep(
+                        step_number=1,
+                        description=f"Index document '{filepath or goal_text}'",
+                        capability=Capability.DOCUMENT_READ.value,
+                        args={"action": "index", "filepath": filepath or goal_text},
+                        confidence=0.98,
+                        estimated_latency=0.5
+                    )
+                )
+            else:
+                steps.append(
+                    PlanStep(
+                        step_number=1,
+                        description=f"Query document knowledge base for '{goal_text}'",
+                        capability=Capability.DOCUMENT_READ.value,
+                        args={"action": "query", "query": goal_text},
+                        confidence=0.95,
+                        estimated_latency=0.2
+                    )
+                )
+
         # Math detection
-        if re.search(r'\b(\d+[\+\-\*\/\%]\d+|\d+\s*\%|\bcalculate\b)', goal_lower):
+        elif re.search(r'\b(\d+[\+\-\*\/\%]\d+|\d+\s*\%|\bcalculate\b)', goal_lower):
             steps.append(
                 PlanStep(
                     step_number=len(steps) + 1,

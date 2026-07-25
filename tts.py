@@ -130,13 +130,27 @@ def speak_gtts_fallback(text: str) -> bool:
         except Exception:
             pass
 
+def clean_for_speech(text: str) -> str:
+    """Sanitizes output text so TTS speaks only clean natural sentences."""
+    if not text:
+        return ""
+    # Strip action tags
+    t = re.sub(r'\[ACTION:.*?\]', '', text)
+    # Strip markdown code blocks ``` ... ```
+    t = re.sub(r'```.*?```', '', t, flags=re.DOTALL)
+    # Strip dictionary formatting like Response: "..." Actions: [...]
+    t = re.sub(r"Response:\s*[\"'](.*?)[\"']\s*Actions:.*", r"\1", t, flags=re.DOTALL)
+    # Strip raw URLs
+    t = re.sub(r'https?://\S+', '', t)
+    return t.strip()
+
 def speak(text: str, voice: str = None):
     """
     Primary TTS entry point for Jarvis.
     Speaks text in ultra-clear, natural human speech.
     """
-    cleaned_text = re.sub(r'\[ACTION:\s*\w+\s*\|\s*.*?\]', '', text).strip()
-    if not cleaned_text:
+    cleaned_text = clean_for_speech(text)
+    if not cleaned_text or cleaned_text.startswith("Response:"):
         return
         
     print(f"[TTS Voice Engine] Jarvis: '{cleaned_text}'")

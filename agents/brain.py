@@ -2,8 +2,16 @@ import re
 import agents.memory as memory_agent
 from services.llm_router import ask_ai
 
+ALLOWED_ACTION_INTENTS = {
+    "search_chatgpt", "send_whatsapp", "send_instagram", "search_google",
+    "open_app", "open_website", "play_music", "close_app", "adjust_volume",
+    "adjust_brightness", "lock_pc", "take_screenshot", "generate_image",
+    "describe_screen", "search_wikipedia", "shutdown_pc", "restart_pc",
+    "sleep_pc", "cancel_shutdown"
+}
+
 def parse_action_tags(response_text: str) -> tuple[list, str]:
-    """Parses prefix tags like [ACTION: play_music | perfect] and returns actions & clean text."""
+    """Parses prefix tags like [ACTION: play_music | song] ONLY if intent is in ALLOWED_ACTION_INTENTS."""
     pattern = r'\[ACTION:\s*(\w+)\s*\|\s*(.*?)\]'
     matches = list(re.finditer(pattern, response_text))
     
@@ -11,12 +19,17 @@ def parse_action_tags(response_text: str) -> tuple[list, str]:
     clean_text = response_text
     
     for m in matches:
-        intent = m.group(1).strip()
+        intent = m.group(1).strip().lower()
         argument = m.group(2).strip()
-        actions.append((intent, argument))
-        clean_text = clean_text.replace(m.group(0), "")
-        
-    return actions, clean_text.strip()
+        if intent in ALLOWED_ACTION_INTENTS:
+            actions.append((intent, argument))
+            clean_text = clean_text.replace(m.group(0), "")
+        else:
+            clean_text = clean_text.replace(m.group(0), "")
+            
+    clean_text = re.sub(r'\[ACTION:.*?\]', '', clean_text)
+    clean_text = re.sub(r'```.*?```', '', clean_text, flags=re.DOTALL).strip()
+    return actions, clean_text
 
 class JarvisBrain:
     """AI Orchestrator Agent."""

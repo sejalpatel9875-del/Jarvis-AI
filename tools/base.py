@@ -4,7 +4,7 @@ Abstract Base Tool Class for all Jarvis Tools.
 
 Responsibilities:
 - Enforce standard execute(args) interface
-- Define tool name, description, and metadata
+- Define tool name, description, timeout, and metadata
 
 Dependencies:
 - None
@@ -34,6 +34,11 @@ class BaseTool(ABC):
     def description(self) -> str:
         """Human-readable description of what the tool does."""
         pass
+
+    @property
+    def timeout(self) -> float:
+        """Execution timeout in seconds. Defaults to 10.0s."""
+        return 10.0
 
     @abstractmethod
     def execute(self, **kwargs) -> ToolResult:

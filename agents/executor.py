@@ -5,7 +5,7 @@ Step Execution Manager & Retry Engine for Jarvis Planner System.
 Responsibilities:
 - Verify step dependencies before execution
 - Resolve tools dynamically from ToolRegistry via capability or tool_name
-- Execute steps with automatic retry engine & exponential backoff (max 2 retries)
+- Execute steps with tool timeout enforcement and automatic retries (exponential backoff)
 - Update PlanStep state transitions (RUNNING -> SUCCESS/FAILED)
 - Log ExecutionEvent timestamps into step history
 
@@ -16,6 +16,7 @@ Dependencies:
 """
 
 import time
+import concurrent.futures
 from typing import List, Optional
 from agents.state import PlanModel, PlanStep, StepStatus, PlanStatus, ExecutionEvent
 from tools.registry import tool_registry
@@ -56,7 +57,7 @@ class StepExecutor:
         """
         Executes a single PlanStep following strict lifecycle:
         1. Dependency Check
-        2. Tool Resolution
+        2. Tool Resolution & Timeout Guard
         3. Execution & Retry Loop (Exponential Backoff)
         4. State Update & History Event Logging
         """
@@ -77,11 +78,14 @@ class StepExecutor:
             step.log_event("FAILED", msg)
             return ToolResult(success=False, result=msg)
 
+        tool_obj = tool_registry.get_tool(resolved_tool)
+        timeout_val = getattr(tool_obj, "timeout", 10.0) if tool_obj else 10.0
+
         step.tool_name = resolved_tool
         step.status = StepStatus.RUNNING
-        step.log_event("STARTED", f"Executing tool '{resolved_tool}' with args {step.args}")
+        step.log_event("STARTED", f"Executing tool '{resolved_tool}' (timeout={timeout_val}s) with args {step.args}")
 
-        # 3. Execution & Retry Loop
+        # 3. Execution & Retry Loop with Timeout
         last_result = None
         for attempt in range(self.max_retries + 1):
             if attempt > 0:
@@ -91,15 +95,22 @@ class StepExecutor:
                 step.log_event("RETRYING", f"Attempt {attempt}/{self.max_retries} after {backoff_time:.2f}s backoff...")
                 time.sleep(backoff_time)
 
-            res = tool_registry.execute(resolved_tool, **step.args)
-            last_result = res
+            try:
+                with concurrent.futures.ThreadPoolExecutor(max_workers=1) as pool:
+                    future = pool.submit(tool_registry.execute, resolved_tool, **step.args)
+                    res = future.result(timeout=timeout_val)
+                    last_result = res
 
-            if res.success:
-                step.status = StepStatus.SUCCESS
-                step.result = res.result
-                step.error = None
-                step.log_event("SUCCESS", f"Step {step.step_number} completed successfully.")
-                return res
+                if res.success:
+                    step.status = StepStatus.SUCCESS
+                    step.result = res.result
+                    step.error = None
+                    step.log_event("SUCCESS", f"Step {step.step_number} completed successfully.")
+                    return res
+            except concurrent.futures.TimeoutError:
+                last_result = ToolResult(success=False, result=f"Tool '{resolved_tool}' execution timed out after {timeout_val}s.")
+            except Exception as e:
+                last_result = ToolResult(success=False, result=f"Tool execution exception: {str(e)}")
 
         # Retries Exhausted
         step.status = StepStatus.FAILED

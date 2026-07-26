@@ -55,7 +55,7 @@ class ReasonerEngine:
         """Determines if the goal is a casual single-turn query."""
         text = goal.strip().lower()
         words = text.split()
-        if len(words) <= 5 and not any(kw in text for kw in ["search", "download", "calculate", "open", "play", "scrape", "write", "pdf", "document"]):
+        if len(words) <= 5 and not any(kw in text for kw in ["search", "download", "calculate", "open", "play", "scrape", "write", "pdf", "document", "screen", "screenshot", "ocr", "snap"]):
             return True
         return False
 

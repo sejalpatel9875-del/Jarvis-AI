@@ -87,7 +87,9 @@ def main():
             try:
                 process_command(user_input)
             except Exception as e:
+                import traceback
                 print(f"[Main Command Error] {e}")
+                traceback.print_exc()
                 tts.speak(f"I had some trouble processing that command, {user_title}.")
     else:
         print("[System] Voice mode selected.")

@@ -57,9 +57,8 @@ class JarvisBrain:
         sys_inst = self.get_system_instruction()
         clean_text, actions = self.planner.solve_goal(user_message, memory_context=sys_inst)
         
-        # Clean text formatting
-        clean_text = re.sub(r'\[ACTION:.*?\]', '', clean_text)
-        clean_text = re.sub(r'```.*?```', '', clean_text, flags=re.DOTALL).strip()
+        # Clean action tags while preserving code blocks and OCR results
+        clean_text = re.sub(r'\[ACTION:.*?\]', '', clean_text).strip()
         
         if not clean_text:
             user_title = self.memory_manager.get_preference("user_name", "Boss")

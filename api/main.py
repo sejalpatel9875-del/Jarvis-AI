@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from api.routes import router
+from api.v1.router import v1_router
 from api.middleware import SecurityHeadersMiddleware
 from core.constants import APP_NAME, APP_VERSION
 
@@ -43,8 +44,9 @@ async def global_exception_handler(request: Request, exc: Exception):
         content={"error": str(exc), "path": str(request.url.path)}
     )
 
-# Include API Routes
+# Include Legacy Top-Level Routes & API v1 Namespaced Routes
 app.include_router(router)
+app.include_router(v1_router, prefix="/api")
 
 # Mount Static Files & Serve Web Dashboard UI at http://127.0.0.1:8000/
 static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")

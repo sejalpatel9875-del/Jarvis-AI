@@ -3,9 +3,10 @@ Purpose:
 Database Connection Engine for Jarvis AI OS.
 
 Responsibilities:
-- Support PostgreSQL connection pooling when DATABASE_URL is set
+- PostgreSQL ThreadedConnectionPool for production
 - Automatic local SQLite fallback when DATABASE_URL is empty or points to sqlite file
 - Auto-commit/rollback context manager transaction handling
+- Safe parameterized query adapter (%s for Postgres, ? for SQLite)
 """
 
 import os
@@ -16,13 +17,16 @@ from contextlib import contextmanager
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
 IS_POSTGRES = DATABASE_URL.startswith("postgresql://") or DATABASE_URL.startswith("postgres://")
 
-# Try importing psycopg2 for PostgreSQL production connections
+_pg_pool = None
+
 if IS_POSTGRES:
     try:
         import psycopg2
         import psycopg2.extras
+        from psycopg2.pool import ThreadedConnectionPool
+        _pg_pool = ThreadedConnectionPool(1, 20, DATABASE_URL)
         USE_POSTGRES = True
-    except ImportError:
+    except Exception:
         USE_POSTGRES = False
 else:
     USE_POSTGRES = False
@@ -31,28 +35,39 @@ DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jarvis.db")
 
 @contextmanager
 def get_connection():
-    """Context manager for Database connection (supports PostgreSQL & SQLite auto-commit/rollback)."""
-    if USE_POSTGRES:
-        conn = psycopg2.connect(DATABASE_URL, cursor_factory=psycopg2.extras.DictCursor)
+    """Context manager for Database connection (supports PostgreSQL pool & SQLite auto-commit/rollback)."""
+    if USE_POSTGRES and _pg_pool:
+        conn = _pg_pool.getconn()
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            _pg_pool.putconn(conn)
     else:
         conn = sqlite3.connect(DB_PATH)
         conn.row_factory = sqlite3.Row
+        try:
+            yield conn
+            conn.commit()
+        except Exception:
+            conn.rollback()
+            raise
+        finally:
+            conn.close()
 
-    try:
-        yield conn
-        conn.commit()
-    except Exception:
-        conn.rollback()
-        raise
-    finally:
-        conn.close()
+def adapt_query(query: str) -> str:
+    """Adapts SQL query placeholders: %s for PostgreSQL, ? for SQLite."""
+    if USE_POSTGRES:
+        return query.replace("?", "%s")
+    return query
 
 def init_db():
     """Initializes schema for conversations, preferences, and document_chunks tables."""
     with get_connection() as conn:
         cursor = conn.cursor()
-        
-        # 1. Conversations Table
         if USE_POSTGRES:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS conversations (
@@ -133,15 +148,7 @@ def log_conversation_turn(user_msg: str, assistant_reply: str, provider: str = "
         timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with get_connection() as conn:
             cursor = conn.cursor()
-            if USE_POSTGRES:
-                cursor.execute(
-                    "INSERT INTO conversations (timestamp, user_message, assistant_reply, provider) VALUES (%s, %s, %s, %s)",
-                    (timestamp, user_msg, assistant_reply, provider)
-                )
-            else:
-                cursor.execute(
-                    "INSERT INTO conversations (timestamp, user_message, assistant_reply, provider) VALUES (?, ?, ?, ?)",
-                    (timestamp, user_msg, assistant_reply, provider)
-                )
+            sql = adapt_query("INSERT INTO conversations (timestamp, user_message, assistant_reply, provider) VALUES (?, ?, ?, ?)")
+            cursor.execute(sql, (timestamp, user_msg, assistant_reply, provider))
     except Exception as e:
         print(f"[Database Error] Failed to log turn: {e}")

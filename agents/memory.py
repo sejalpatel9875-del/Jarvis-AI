@@ -1,3 +1,13 @@
+"""
+Purpose:
+Memory Agent & Preference Auto-Learning Subsystem for Jarvis AI OS.
+
+Responsibilities:
+- Detect personal preferences, company names, project names, and facts from user input
+- Persist extracted preferences directly into SQLite
+- Inject learned facts into the LLM system prompt for O(1) context recall
+"""
+
 import re
 import memory.database as db
 import memory.storage as storage
@@ -24,7 +34,7 @@ def history():
     return memory
 
 def get_user_title() -> str:
-    """Returns the user's title (e.g. 'Boss')."""
+    """Returns the user's title (e.g. 'Boss' or custom name)."""
     return storage.get_preference("user_name", "Boss") or "Boss"
 
 def get_assistant_name() -> str:
@@ -53,12 +63,26 @@ def forget_fact(key: str):
     return f"Forgot {clean_key}, Boss."
 
 def auto_learn_from_input(user_text: str) -> list:
-    """Automatically detects personal facts, contacts, and profile changes from user input."""
+    """Automatically detects personal facts, company info, and profile changes from user input."""
     text = user_text.strip()
     text_lower = text.lower().strip()
     learned = []
     
-    # "mera favourite/favorite X Y hai" / "my favorite X is Y"
+    # 1. "my company is X" / "mera company X hai"
+    m = re.search(r'(?:my\s+company\s+is|mera\s+company)\s+(.+?)(?:\.|$)', text_lower)
+    if m:
+        comp = m.group(1).strip().title()
+        update_profile("company_name", comp)
+        learned.append(("company", f"company_name = {comp}"))
+
+    # 2. "my project is X" / "my project name is X"
+    m = re.search(r'(?:my\s+project\s+(?:name\s+)?is)\s+(.+?)(?:\.|$)', text_lower)
+    if m:
+        proj = m.group(1).strip().title()
+        update_profile("project_name", proj)
+        learned.append(("project", f"project_name = {proj}"))
+
+    # 3. "mera favourite/favorite X Y hai" / "my favorite X is Y"
     m = re.search(r'(?:mera|meri|my)\s+(?:fav(?:ou?rite)?)\s+([\w\s]+?)\s+(?:is|hai)\s+(.+?)(?:\.|$)', text_lower)
     if m:
         key = f"favorite_{m.group(1).strip().replace(' ', '_')}"
@@ -66,7 +90,7 @@ def auto_learn_from_input(user_text: str) -> list:
         remember_fact(key, val)
         learned.append(("learn", f"{key} = {val}"))
         
-    # "my name is X" / "mera naam X hai" / "call me X"
+    # 4. "my name is X" / "mera naam X hai" / "call me X"
     m = re.search(r'(?:my\s+name\s+is|mera\s+naam|call\s+me)\s+(\w+)', text_lower)
     if m:
         name = m.group(1).strip().capitalize()
@@ -76,7 +100,15 @@ def auto_learn_from_input(user_text: str) -> list:
     return learned
 
 def get_memory_context() -> str:
-    """Returns formatted memory string for AI system instruction."""
+    """Returns formatted memory string containing stored user preferences for AI system instruction."""
     user_title = get_user_title()
     lang = storage.get_preference("language", "Hinglish")
-    return f"User Title: {user_title}\nPreferred Language: {lang}"
+    company = storage.get_preference("company_name", "")
+    project = storage.get_preference("project_name", "")
+
+    ctx = f"User Name/Title: {user_title}\nPreferred Language: {lang}"
+    if company:
+        ctx += f"\nUser Company: {company}"
+    if project:
+        ctx += f"\nActive Project: {project}"
+    return ctx

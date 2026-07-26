@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. AI OS — Autonomous Personal Assistant</title>
+    <!-- Modern Typography from Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;600;700&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Custom Vanilla CSS -->
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="app-container">
+        <!-- Left Sidebar -->
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo">
+                    <i class="fa-solid fa-robot"></i>
+                </div>
+                <div class="brand-text">
+                    <h2>J.A.R.V.I.S. AI OS</h2>
+                    <span class="version-tag">v1.6.1 STABLE</span>
+                </div>
+            </div>
+
+            <div class="system-status">
+                <div class="status-indicator online"></div>
+                <span id="systemStatusText">System Status: Online</span>
+            </div>
+
+            <nav class="nav-menu">
+                <button class="nav-item active" data-tab="chat-tab">
+                    <i class="fa-solid fa-comments"></i>
+                    <span>AI Chat & Assistant</span>
+                </button>
+                <button class="nav-item" data-tab="rag-tab">
+                    <i class="fa-solid fa-file-contract"></i>
+                    <span>Document RAG Knowledge</span>
+                </button>
+                <button class="nav-item" data-tab="metrics-tab">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Telemetry Metrics</span>
+                </button>
+            </nav>
+
+            <div class="provider-panel">
+                <h3><i class="fa-solid fa-server"></i> Active AI Providers</h3>
+                <div class="provider-item" id="providerGroq">
+                    <span><i class="fa-solid fa-bolt text-yellow"></i> Groq (Ultra-Fast)</span>
+                    <span class="badge badge-success">Active</span>
+                </div>
+                <div class="provider-item" id="providerGemini">
+                    <span><i class="fa-solid fa-cloud text-blue"></i> Gemini (Cloud)</span>
+                    <span class="badge badge-success">Active</span>
+                </div>
+                <div class="provider-item" id="providerOllama">
+                    <span><i class="fa-solid fa-microchip text-purple"></i> Ollama (Offline)</span>
+                    <span class="badge badge-secondary">Ready</span>
+                </div>
+                <div class="provider-item" id="providerDb">
+                    <span><i class="fa-solid fa-database text-green"></i> SQLite Vector Store</span>
+                    <span class="badge badge-success">Connected</span>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Content View -->
+        <main class="main-content">
+            <!-- TAB 1: CHAT INTERFACE -->
+            <section id="chat-tab" class="tab-content active">
+                <header class="chat-header">
+                    <div class="chat-title">
+                        <h2>Jarvis Autonomous Agent OS</h2>
+                        <p>Hybrid Router (Groq &bull; Gemini &bull; Ollama) &bull; Persistent Memory</p>
+                    </div>
+                    <div class="header-actions">
+                        <button class="btn btn-outline" id="clearChatBtn">
+                            <i class="fa-solid fa-trash"></i> Clear Chat
+                        </button>
+                    </div>
+                </header>
+
+                <div class="chat-messages" id="chatMessages">
+                    <!-- Welcome Message -->
+                    <div class="message-row assistant">
+                        <div class="avatar"><i class="fa-solid fa-robot"></i></div>
+                        <div class="message-bubble">
+                            <p>Namaste, Boss! I am <strong>Jarvis</strong> — your autonomous AI agent assistant. How can I help you today?</p>
+                            <div class="quick-actions">
+                                <button class="chip" data-prompt="Calculate 15% of 800">🧮 15% of 800</button>
+                                <button class="chip" data-prompt="play despacito">🎵 Play Despacito</button>
+                                <button class="chip" data-prompt="Who are you?">🤖 Who are you?</button>
+                                <button class="chip" data-prompt="What tools do you have?">🛠️ Active Tools</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-input-area">
+                    <form id="chatForm">
+                        <div class="input-wrapper">
+                            <input type="text" id="userInput" placeholder="Ask Jarvis anything or give a command..." autocomplete="off">
+                            <button type="button" class="icon-btn" id="voiceBtn" title="Voice Input">
+                                <i class="fa-solid fa-microphone"></i>
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="sendBtn">
+                                <span>Send</span>
+                                <i class="fa-solid fa-paper-plane"></i>
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </section>
+
+            <!-- TAB 2: DOCUMENT RAG KNOWLEDGE BASE -->
+            <section id="rag-tab" class="tab-content">
+                <header class="content-header">
+                    <h2>Document Intelligence & RAG Knowledge Base</h2>
+                    <p>Persistently index PDF, DOCX, TXT, and CSV documents with instant semantic search and page citations.</p>
+                </header>
+
+                <div class="rag-grid">
+                    <!-- Upload Box -->
+                    <div class="card upload-card">
+                        <h3><i class="fa-solid fa-cloud-arrow-up"></i> Index New Document</h3>
+                        <div class="dropzone" id="dropzone">
+                            <i class="fa-solid fa-file-pdf dropzone-icon"></i>
+                            <p>Drag & Drop file here or <strong>browse</strong></p>
+                            <span>Supports .pdf, .docx, .txt, .csv, .log</span>
+                            <input type="file" id="fileInput" accept=".pdf,.docx,.txt,.csv,.log,.md" hidden>
+                        </div>
+                        <div id="uploadStatus" class="upload-status"></div>
+                    </div>
+
+                    <!-- Query Box -->
+                    <div class="card query-card">
+                        <h3><i class="fa-solid fa-magnifying-glass"></i> Semantic RAG Query</h3>
+                        <div class="query-input-group">
+                            <input type="text" id="ragQueryInput" placeholder="Ask a question across indexed documents...">
+                            <button class="btn btn-primary" id="ragQueryBtn">
+                                <i class="fa-solid fa-search"></i> Query
+                            </button>
+                        </div>
+                        <div class="results-box" id="ragResultsBox">
+                            <p class="placeholder-text">Indexed document results with page citations will appear here...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: TELEMETRY METRICS -->
+            <section id="metrics-tab" class="tab-content">
+                <header class="content-header">
+                    <h2>Telemetry Metrics & Provider Performance</h2>
+                    <p>Real-time telemetry tracking call counts, success rates, and latencies across AI providers.</p>
+                </header>
+
+                <div class="metrics-grid">
+                    <div class="metric-card card-groq">
+                        <div class="metric-header">
+                            <i class="fa-solid fa-bolt"></i>
+                            <h3>Groq API</h3>
+                        </div>
+                        <div class="metric-value" id="groqCallsCount">0</div>
+                        <div class="metric-label">Total API Calls</div>
+                    </div>
+
+                    <div class="metric-card card-gemini">
+                        <div class="metric-header">
+                            <i class="fa-solid fa-cloud"></i>
+                            <h3>Gemini API</h3>
+                        </div>
+                        <div class="metric-value" id="geminiCallsCount">0</div>
+                        <div class="metric-label">Total API Calls</div>
+                    </div>
+
+                    <div class="metric-card card-ollama">
+                        <div class="metric-header">
+                            <i class="fa-solid fa-microchip"></i>
+                            <h3>Ollama Local</h3>
+                        </div>
+                        <div class="metric-value" id="ollamaCallsCount">0</div>
+                        <div class="metric-label">Total API Calls</div>
+                    </div>
+
+                    <div class="metric-card card-latency">
+                        <div class="metric-header">
+                            <i class="fa-solid fa-stopwatch"></i>
+                            <h3>Average Latency</h3>
+                        </div>
+                        <div class="metric-value" id="avgLatencyValue">0.00s</div>
+                        <div class="metric-label">System Response Time</div>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Application Logic JS -->
+    <script src="/static/app.js"></script>
+</body>
+</html>

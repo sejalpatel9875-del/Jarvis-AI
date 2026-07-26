@@ -1,6 +1,6 @@
 """
 Purpose:
-API v1 Router Specifications for Jarvis AI OS (Sprint v4.6 Business Communication & Activity Feed Platform).
+API v1 Router Specifications for Jarvis AI OS (Sprint v4.7 Product Polish & Launch Readiness Platform).
 
 Namespaces:
 - /api/v1/chat
@@ -28,6 +28,9 @@ Namespaces:
 - /api/v1/activity-feed
 - /api/v1/team-inbox/messages
 - /api/v1/reminders
+- /api/v1/search
+- /api/v1/command-palette
+- /api/v1/onboarding/status
 """
 
 from fastapi import APIRouter
@@ -64,6 +67,9 @@ from services.lead_ai_assistant import lead_ai_assistant
 from services.activity_feed import activity_feed
 from services.team_inbox import team_inbox
 from services.calendar_reminders import calendar_reminders
+from services.global_search import global_search
+from services.command_palette import command_palette
+from services.onboarding_wizard import onboarding_wizard
 
 v1_router = APIRouter(prefix="/v1")
 
@@ -115,8 +121,8 @@ def get_audit_logs_endpoint(org_id: str = None, workspace_id: str = None):
     return {"logs": audit_logger.get_logs(org_id, workspace_id)}
 
 @v1_router.get("/ceo-dashboard", tags=["v1 SaaS Core"])
-def get_ceo_dashboard_endpoint(org_id: str = None):
-    return {"dashboard": ceo_dashboard.get_dashboard_summary(org_id)}
+def get_ceo_dashboard_endpoint(org_id: str = None, workspace_id: str = "default"):
+    return {"dashboard": ceo_dashboard.get_dashboard_summary(org_id, workspace_id)}
 
 # Knowledge Intelligence Platform Endpoints
 @v1_router.post("/knowledge/query", tags=["v1 Knowledge Platform"])
@@ -185,3 +191,20 @@ def create_reminder_endpoint(workspace_id: str, title: str, due_at: str = "", as
 @v1_router.get("/reminders", tags=["v1 Communication Hub"])
 def list_reminders_endpoint(workspace_id: str = "default", pending_only: bool = True):
     return {"reminders": calendar_reminders.list_reminders(workspace_id, pending_only)}
+
+# Product Polish & Global Experience Endpoints
+@v1_router.get("/search", tags=["v1 Product Polish"])
+def global_search_endpoint(workspace_id: str = "default", query: str = ""):
+    return global_search.search_all(workspace_id, query)
+
+@v1_router.get("/command-palette", tags=["v1 Product Polish"])
+def get_command_palette_endpoint(role: str = "owner"):
+    return {"commands": command_palette.get_available_commands(role)}
+
+@v1_router.get("/onboarding/status", tags=["v1 Product Polish"])
+def get_onboarding_status_endpoint(workspace_id: str = "default"):
+    return onboarding_wizard.get_onboarding_status(workspace_id)
+
+@v1_router.post("/onboarding/complete-step", tags=["v1 Product Polish"])
+def complete_onboarding_step_endpoint(workspace_id: str = "default", step_name: str = "workspace_setup"):
+    return onboarding_wizard.complete_onboarding_step(workspace_id, step_name)

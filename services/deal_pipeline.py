@@ -104,5 +104,17 @@ class DealPipelineService:
             "deals_by_stage": stage_counts
         }
 
+    def list_deals(self, workspace_id: str = "default") -> List[Dict[str, Any]]:
+        """Lists sales deals for a workspace."""
+        with db.get_connection() as conn:
+            cursor = conn.cursor()
+            cursor.execute(
+                "SELECT id, lead_id, workspace_id, title, value_usd, stage, expected_close_date, created_at FROM deals WHERE workspace_id = ? ORDER BY id DESC",
+                (workspace_id,)
+            )
+            rows = cursor.fetchall()
+        return [dict(r) for r in rows]
+
 # Global Singleton
 deal_pipeline = DealPipelineService()
+

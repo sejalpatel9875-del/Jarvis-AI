@@ -1,6 +1,6 @@
 """
 Purpose:
-API v1 Router Specifications for Jarvis AI OS (Sprint v4.3 Universal Knowledge Intelligence Platform).
+API v1 Router Specifications for Jarvis AI OS (Sprint v4.4 Enterprise Automation Engine).
 
 Namespaces:
 - /api/v1/chat
@@ -19,6 +19,9 @@ Namespaces:
 - /api/v1/knowledge/query
 - /api/v1/knowledge/report
 - /api/v1/knowledge/timeline
+- /api/v1/workflows/create
+- /api/v1/workflows/execute
+- /api/v1/workflows/history
 """
 
 from fastapi import APIRouter
@@ -46,6 +49,9 @@ from services.dashboard import ceo_dashboard
 from services.knowledge_engine import knowledge_engine
 from services.report_generator import report_generator
 from services.knowledge_timeline import knowledge_timeline
+from services.automation_engine import automation_engine
+from services.workflow_execution import workflow_execution
+from services.workflow_scheduler import workflow_scheduler
 
 v1_router = APIRouter(prefix="/v1")
 
@@ -112,3 +118,16 @@ def generate_report_endpoint(title: str, topic: str, context_text: str = ""):
 @v1_router.get("/knowledge/timeline", tags=["v1 Knowledge Platform"])
 def get_timeline_endpoint(workspace_id: str = "default", limit: int = 30):
     return {"timeline": knowledge_timeline.get_timeline(workspace_id, limit)}
+
+# Automation Engine Endpoints
+@v1_router.post("/workflows/create", tags=["v1 Automation Engine"])
+def create_workflow_endpoint(workspace_id: str, name: str, trigger_type: str, action_type: str):
+    return automation_engine.create_workflow(workspace_id, name, trigger_type, action_type)
+
+@v1_router.post("/workflows/execute", tags=["v1 Automation Engine"])
+def execute_workflow_endpoint(workflow_id: int):
+    return workflow_execution.execute_workflow(workflow_id)
+
+@v1_router.get("/workflows/history", tags=["v1 Automation Engine"])
+def get_workflow_history_endpoint(workspace_id: str = "default", limit: int = 30):
+    return {"history": workflow_execution.get_execution_history(workspace_id, limit)}

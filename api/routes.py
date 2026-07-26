@@ -36,6 +36,10 @@ from services.document_loader import DocumentLoader
 from services.chunker import SemanticChunker
 from providers.embedding import global_vector_store
 from tools.registry import tool_registry
+from services.analytics import analytics
+from services.billing import billing
+from services.marketplace import marketplace
+from memory.vector_memory import vector_memory
 
 router = APIRouter()
 brain = JarvisBrain()
@@ -87,6 +91,26 @@ def login_account(email: str, password: str):
     if not res["success"]:
         raise HTTPException(status_code=401, detail=res["error"])
     return res
+
+@router.get("/analytics", tags=["Analytics & Billing"])
+def get_analytics(user_id: str = "global"):
+    """Returns usage analytics for a specific user or global stats."""
+    if user_id == "global":
+        return {"stats": analytics.get_global_stats()}
+    return {"stats": analytics.get_user_stats(user_id)}
+
+@router.get("/billing/plans", tags=["Analytics & Billing"])
+def get_billing_plans():
+    """Returns available subscription plan tiers."""
+    plans = [billing.get_plan_info(p) for p in ["free", "pro", "business", "enterprise"]]
+    return {"plans": plans}
+
+@router.get("/marketplace/agents", tags=["Agent Marketplace"])
+def list_marketplace_agents(query: str = ""):
+    """Lists or searches the Agent Marketplace."""
+    if query:
+        return {"agents": marketplace.search_agents(query)}
+    return {"agents": marketplace.list_agents()}
 
 @router.get("/metrics", response_model=MetricsResponse, tags=["Metrics"])
 def get_metrics():

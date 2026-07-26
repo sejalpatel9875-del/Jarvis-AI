@@ -1,20 +1,21 @@
 """
 Purpose:
-Desktop System & Application Control Tool for Jarvis.
+Desktop Operator System & Application Control Tool for Jarvis ToolRegistry.
 
 Responsibilities:
-- Open & close desktop applications
-- Volume and brightness controls
-- Lock PC, take screenshot, shutdown/restart
+- Control desktop applications (Chrome, VS Code, Notepad, Calc, Terminal)
+- Execute mouse/keyboard/window operations with Safety Guardrail protection
 
 Dependencies:
 - tools/base.py
 - tools/registry.py
+- services/desktop_operator.py
 - automation.py
 """
 
 from tools.base import BaseTool, ToolResult
 from tools.registry import register_tool
+from services.desktop_operator import desktop_operator
 import automation
 
 @register_tool
@@ -25,12 +26,21 @@ class SystemTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "Controls Desktop applications, volume/brightness, screenshots, and PC power."
+        return "Controls Desktop applications, mouse/keyboard/window operations, volume/brightness, and PC power."
 
     def execute(self, action: str = "", target: str = "", **kwargs) -> ToolResult:
         act = action.lower().strip() or kwargs.get("intent", "").lower()
         tgt = target.strip() or kwargs.get("arg", "")
+
+        # 1. Delegate to Desktop Operator Subsystem with Safety Guardrails
+        op_res = desktop_operator.execute_action(act, tgt, **kwargs)
+        if not op_res["safe"]:
+            return ToolResult(success=False, result=op_res["result"])
         
+        if op_res["success"] and op_res["result"] != f"Unknown desktop operator action '{act}'.":
+            return ToolResult(success=True, result=op_res["result"])
+
+        # 2. Fallback to Automation Module
         if act == "open_app":
             res = automation.open_app(tgt)
         elif act == "close_app":

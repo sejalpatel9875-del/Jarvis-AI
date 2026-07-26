@@ -1,13 +1,13 @@
-# 🤖 J.A.R.V.I.S. AI OS — Autonomous Agentic Operating System
+# 🤖 J.A.R.V.I.S. AI OS — Autonomous Business AI Operating System
 
-[![Version](https://img.shields.io/badge/version-v1.7.0-blue.svg)](https://github.com/sejalpatel9875-del/Jarvis-AI)
+[![Version](https://img.shields.io/badge/version-v4.7.0-blue.svg)](https://github.com/sejalpatel9875-del/Jarvis-AI)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 [![Python](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.110.0-009688.svg)](https://fastapi.tiangolo.com)
-[![Playwright](https://img.shields.io/badge/Playwright-Automated-45ba4b.svg)](https://playwright.dev)
-[![Tests](https://img.shields.io/badge/tests-46%2F46%20passing-brightgreen.svg)](tests/)
+[![Tests](https://img.shields.io/badge/tests-145%2F145%20passing-brightgreen.svg)](tests/)
+[![Status](https://img.shields.io/badge/Status-Commercial%20Beta%20Ready-success.svg)](#)
 
-> **J.A.R.V.I.S. (Just A Rather Very Intelligent System)** is a production-grade, highly modular, autonomous AI Operating System built in Python. Featuring a **Hybrid Multi-LLM Router** (Groq, Gemini, Ollama), **Capability-Based Autonomous Planner Agent**, **Persistent SQLite Vector Store for Document RAG**, **Playwright Browser Automation**, **Vision Intelligence Screen Capture & OCR**, and a **ChatGPT-Style Glassmorphic Web Dashboard**.
+> **J.A.R.V.I.S. (Just A Rather Very Intelligent System)** is an autonomous, production-grade **Business AI Operating System**. Built for enterprise scalability, featuring **Multi-Tenant Workspaces**, **Universal RAG Document Intelligence**, **AI Sales CRM Co-Pilot**, **No-Code Automation Workflows**, **Role-Based Access Control (RBAC)**, **Global Search**, **Command Palette (Ctrl + K)**, and a **Commercial Glassmorphism Web App & Dashboard**.
 
 ---
 
@@ -15,141 +15,109 @@
 
 ```mermaid
 graph TD
-    UserClient([🌐 Web UI Dashboard / 🖥️ CLI / 🔌 REST API]) --> APILayer[⚡ FastAPI Application Layer: api/main.py]
+    UserClient([🌐 Web UI Dashboard / 🖥️ CLI / 🔌 REST API v1]) --> APILayer[⚡ FastAPI Application Layer: api/main.py]
     
-    APILayer --> SSE[📡 Server-Sent Events Token Streaming: POST /chat/stream]
-    APILayer --> Rest[💬 REST Chat Endpoint: POST /chat]
-    
-    Rest --> Brain[🧠 Jarvis Brain Orchestrator: agents/brain.py]
-    SSE --> Brain
+    APILayer --> V1Router[📡 Namespaced Router: api/v1/router.py]
+    V1Router --> GlobalSearch[🔍 Global Search: services/global_search.py]
+    V1Router --> CommandPalette[⌨️ Command Palette: services/command_palette.py]
+    V1Router --> Onboarding[🚀 Onboarding Wizard: services/onboarding_wizard.py]
+    V1Router --> CEODash[📊 CEO Dashboard: services/dashboard.py]
+
+    APILayer --> Brain[🧠 Jarvis Brain Orchestrator: agents/brain.py]
     
     Brain --> Router{⚡ Hybrid LLM Router: services/llm_router.py}
     Router -->|Primary <0.3s| Groq[⚡ Groq AI llama-3.1-8b]
     Router -->|Cloud Fallback| Gemini[☁️ Gemini AI 3.1-flash]
     Router -->|Offline Fallback| Ollama[🦙 Ollama Local llama3.2]
     
-    Brain --> Memory[(🗄️ SQLite Persistent Memory: memory/jarvis.db)]
-    Brain --> Planner[🧭 Autonomous Planner Agent: agents/planner.py]
+    Brain --> Memory[(🗄️ PostgreSQL / SQLite Master Storage)]
     
-    Planner --> Reasoner[🔍 Reasoner Engine: agents/reasoner.py]
-    Planner --> Executor[⚙️ Executor Engine: agents/executor.py]
-    Planner --> Validator[✅ Output Validator: agents/validator.py]
-    
-    Executor --> Registry[🛠️ Tool Registry System: tools/registry.py]
-    
-    Registry --> VisionTool[👁️ VisionTool: tools/vision.py]
-    Registry --> DocTool[📄 Document RAG Tool: tools/document.py]
-    Registry --> BrowserTool[🌐 Playwright Browser Tool: tools/browser.py]
-    Registry --> SystemTool[💻 System Control Tool: tools/system.py]
-    Registry --> CalcTool[🧮 Calculator Tool: tools/calculator.py]
-    Registry --> MusicTool[🎵 Music Tool: tools/music.py]
-    
-    VisionTool --> VisionService[📸 Screen Capture & OCR Engine: services/vision.py]
-    DocTool --> VectorStore[(🗄️ SQLite Vector Embeddings)]
-    BrowserTool --> Playwright[🎭 Playwright Headless Browser: services/browser_automation.py]
+    Brain --> RAG[📄 Universal RAG Loader: services/universal_document_loader.py]
+    Brain --> Automation[⚡ No-Code Workflow Engine: services/automation_engine.py]
+    Brain --> CRM[💼 Lead CRM Engine: services/crm_engine.py]
+    Brain --> CoPilot[🤖 AI Sales Co-Pilot: services/lead_ai_assistant.py]
+    Brain --> Feed[📈 Activity Feed: services/activity_feed.py]
 ```
 
 ---
 
-## ✨ Key Features & Capabilities
+## ✨ Key Platform Modules & Capabilities
 
-### 1. ⚡ Hybrid LLM Router Engine
-- **Ultra-Fast Primary (<0.3s)**: Groq Cloud AI (`llama-3.1-8b-instant`).
-- **Cloud Fallback**: Google Gemini AI (`gemini-3.1-flash-lite`).
-- **Offline Local Fallback**: Ollama (`llama3.2`).
-- Zero downtime guarantee via automatic failover and network health checks.
+### 1. 🏢 Multi-Tenant Workspaces & RBAC Security
+- **Isolated Workspaces**: Dedicated data isolation per department and organization (`core/workspaces.py`).
+- **Role Matrix**: Granular permissions for `Owner`, `Admin`, `Manager`, `Employee`, and `Guest` (`core/rbac.py`).
+- **Workspace API Keys**: Hashed API key authentication (`jarvis_sk_...`).
 
-### 2. 👁️ Vision Intelligence & Screen Reading
-- Full desktop screen capture (`PIL.ImageGrab`).
-- Windows active foreground window title detection (`ctypes.windll.user32`).
-- Optical Character Recognition (OCR text extraction) for code debugging and visual workspace inspection.
+### 2. 🧠 Universal Vector RAG Intelligence
+- Instant indexing for `.pdf`, `.docx`, `.pptx`, `.xlsx`, `.csv`, `.txt`, and `.md` files.
+- Local TF-IDF Vector Embeddings with Cosine Similarity recall (`services/knowledge_engine.py`).
+- Automated Executive Markdown Report Generation.
 
-### 3. 🌐 Playwright Browser Automation
-- Automated web browsing, page text extraction, and full-page screenshot capturing.
-- Resilient fallback HTTP scraper for quick webpage summaries.
+### 3. ⚡ No-Code Automation Workflow Platform
+- Trigger-Condition-Action definitions (`DOCUMENT_UPLOADED`, `SCHEDULED_CRON`, `TASK_FINISHED`).
+- Background recurring cron execution scheduler (`services/workflow_scheduler.py`).
+- Workflow execution logging with exponential retry backoff loops (`services/workflow_execution.py`).
 
-### 4. 📄 Persistent Document RAG (Retrieval-Augmented Generation)
-- Instant indexing for `.pdf`, `.docx`, `.txt`, and `.md` files.
-- Local TF-IDF Vector Embeddings with Cosine Similarity search.
-- Backed by SQLite persistent storage (`document_chunks` table).
-- Multi-document comparison and page citation support.
+### 4. 💼 Lead CRM & AI Sales Co-Pilot
+- Inbound lead tracking (`NEW`, `QUALIFIED`, `PROPOSAL`, `WON`, `LOST`) with AI Intent Scoring (0-100).
+- Revenue Deal Pipeline metrics (`total_pipeline_value_usd`, `avg_deal_size_usd`).
+- 1-Click personalized email outreach drafting and meeting transcript summaries (`services/lead_ai_assistant.py`).
 
-### 5. 🎨 Dark Glassmorphic Web Dashboard UI
-- Modern ChatGPT-style single-page Web UI (`static/index.html`).
-- **Web Speech API**: Integrated microphone voice input button.
-- **Server-Sent Events (SSE)**: Live token-by-token typing response streaming (`POST /chat/stream`).
-- Drag-and-drop document upload zone and telemetry stats panel.
+### 5. 💬 Team Communication & Activity Feed
+- GitHub-style real-time chronological workspace activity feed (`services/activity_feed.py`).
+- Departmental Team Inbox (`#SALES`, `#ENGINEERING`, `#HR`, `#MARKETING`).
+- Task calendar reminders and completion status engine.
+
+### 6. 🎨 Commercial Glassmorphic Web App & Command Palette
+- **Web App & Landing Page**: Modern SaaS landing page (`web/index.html`).
+- **Command Palette (`Ctrl + K`)**: Keyboard-driven quick action shortcuts.
+- **Global Search**: Unified indexing across Leads, Deals, Workflows, Knowledge, and Activity.
 
 ---
 
-## 📁 Repository Directory Structure
+## 📁 Directory Structure
 
 ```text
 jarvis/
 ├── api/                        # FastAPI Web Layer
 │   ├── auth.py                 # Security & X-API-Key Middleware
-│   ├── main.py                 # FastAPI Application Server & Static Mount
-│   └── routes.py               # REST & SSE Endpoint Handlers
-├── agents/                     # Autonomous AI Agent Subsystem
-│   ├── brain.py                # Central AI Orchestrator Brain
-│   ├── executor.py             # Capability-Based Step Executor
-│   ├── memory.py               # Conversational Fact Learner
-│   ├── planner.py              # Autonomous Goal Planner Agent
-│   ├── reasoner.py             # Goal Decomposer & Plan Model Builder
-│   ├── state.py                # Dataclasses & Capability Enums
-│   └── validator.py            # Plan Output & Quality Inspector
+│   ├── main.py                 # FastAPI Server Entrypoint
+│   └── v1/router.py            # Versioned REST Endpoint Router
 ├── core/                       # Foundation Utilities & Enums
-│   ├── constants.py            # Global Version & Model Constants
-│   ├── exceptions.py           # System Custom Exception Hierarchy
-│   └── interfaces.py           # Abstract Base Contracts
+│   ├── constants.py            # Global App Version (v4.7.0)
+│   ├── rbac.py                 # Role-Based Access Control Engine
+│   └── workspaces.py           # Multi-Tenant Workspace Manager
+├── docs/                       # Commercial Launch & API Documentation
+│   └── COMMERCIAL_LAUNCH_GUIDE.md # Commercial Pricing & API Specs
 ├── memory/                     # Persistent Database Layer
-│   ├── database.py             # SQLite Schema Management (Vector Store)
-│   ├── jarvis.db               # SQLite Master Database
-│   └── manager.py              # Turn History & Preferences Manager
-├── providers/                  # AI Model & Embedding Providers
-│   ├── embedding.py            # SQLite Vector Store & TF-IDF Embeddings
-│   └── llm_provider.py         # Multi-LLM API Wrappers
-├── schemas/                    # Pydantic Data Transfer Objects (DTOs)
-│   ├── chat.py                 # Chat DTOs
-│   ├── document.py             # Document RAG DTOs
-│   └── system.py               # Health & Status DTOs
-├── services/                   # Service Layer
-│   ├── browser_automation.py   # Playwright Web Automation Service
-│   ├── chunker.py              # Semantic Text Chunker
-│   ├── document_loader.py      # PDF / DOCX / TXT Extractor
-│   ├── llm_router.py           # Multi-Provider Router Logic
-│   ├── logger.py               # Structured Logging System
-│   └── vision.py               # Vision Intelligence & OCR Service
-├── static/                     # Web Dashboard UI Frontend
-│   ├── app.js                  # Client JavaScript & SSE EventSource
-│   ├── index.html              # ChatGPT-Style HTML Dashboard
-│   └── style.css               # Glassmorphism Design Tokens & CSS
-├── tools/                      # Modular Tool Registry Framework
-│   ├── base.py                 # Base Tool Contract
-│   ├── browser.py              # Playwright Web Scraper Tool
-│   ├── calculator.py           # Fast Arithmetic Math Tool
-│   ├── document.py             # Persistent Document RAG Tool
-│   ├── music.py                # Direct YouTube Music Player Tool
-│   ├── registry.py             # ToolRegistry Core Engine
-│   ├── search.py               # Google & Web Search Tool
-│   ├── system.py               # Desktop System Automation Tool
-│   └── vision.py               # Vision Intelligence Tool
-├── tests/                      # Automated Unit Test Suite (46 Tests)
-├── Dockerfile                  # Container Production Configuration
+│   ├── database.py             # PostgreSQL / SQLite Master Connection Pool
+│   └── workspace_memory.py     # Workspace Isolated Fact Memory
+├── services/                   # Business Services Layer
+│   ├── activity_feed.py        # Workspace Event Feed Tracker
+│   ├── automation_engine.py    # Trigger-Action Workflow Engine
+│   ├── command_palette.py      # Quick Shortcuts Registry
+│   ├── crm_engine.py           # Sales Lead CRM Engine
+│   ├── dashboard.py            # CEO Executive Command Center
+│   ├── deal_pipeline.py        # Revenue Deal Pipeline Metrics
+│   ├── global_search.py        # Cross-Entity Global Search Engine
+│   ├── knowledge_engine.py     # Workspace RAG Engine
+│   ├── lead_ai_assistant.py    # AI Sales Co-Pilot Engine
+│   ├── onboarding_wizard.py    # Guided 4-Step Onboarding Tracker
+│   ├── team_inbox.py           # Departmental Team Messaging
+│   └── universal_document_loader.py # PDF/DOCX/XLSX Universal Loader
+├── web/                        # Commercial SaaS Landing Page
+│   ├── index.html              # Glassmorphic HTML Web Interface
+│   ├── styles.css              # Dark Glassmorphism CSS Design Tokens
+│   └── app.js                  # Interactive Demo Logic
+├── tests/                      # Automated Test Suite (145+ Tests)
+├── Dockerfile                  # Production Container Configuration
 ├── docker-compose.yml          # Multi-Container Compose Configuration
-├── main.py                     # Interactive CLI Application Entry Point
-├── pyproject.toml              # Build & Package Specification
-├── requirements.txt            # Python Dependencies
 └── README.md                   # System Documentation
 ```
 
 ---
 
 ## 🚀 Quick Start Guide
-
-### Prerequisites
-- Python 3.10+
-- Windows / macOS / Linux
 
 ### 1. Installation
 ```bash
@@ -166,63 +134,34 @@ source .venv/bin/activate   # Linux/macOS
 pip install -r requirements.txt
 ```
 
-### 2. Environment Configuration
-Create a `.env` file in the root directory:
+### 2. Environment Setup
+Copy `.env.example` to `.env`:
 ```env
+ENVIRONMENT=production
+DATABASE_URL=sqlite:///./memory/jarvis.db
 GROQ_API_KEY=your_groq_api_key
 GEMINI_API_KEY=your_gemini_api_key
-OLLAMA_MODEL=llama3.2
 ```
 
-### 3. Running the Web Application Dashboard
+### 3. Running the Server
 ```bash
 uvicorn api.main:app --reload --host 127.0.0.1 --port 8000
 ```
-- Open browser: **`http://127.0.0.1:8000/`**
-- Interactive Swagger API docs: **`http://127.0.0.1:8000/docs`**
-
-### 4. Running the Interactive CLI Assistant
-```bash
-python main.py
-```
-
----
-
-## 📊 System Benchmarks
-
-| Operation / Capability | Provider / Engine | Average Latency | API Cost |
-| :--- | :--- | :--- | :--- |
-| **Fast Math Calculation** | Local Fast Evaluator | `<0.005 s` | `$0.00` |
-| **Casual Greeting & Chat** | Groq (`llama-3.1-8b-instant`) | `0.28 s` | `$0.00` (Free Tier) |
-| **Complex Planning Goal** | Gemini (`gemini-3.1-flash-lite`) | `1.15 s` | Cloud Tier |
-| **Document RAG Vector Search** | SQLite Vector Store | `<0.012 s` | `$0.00` |
-| **Desktop Screenshot Capture** | `PIL.ImageGrab` | `0.15 s` | `$0.00` |
-| **Webpage Text Scraping** | Playwright Chromium | `1.20 s` | `$0.00` |
+- Web Application Landing Page: **`http://127.0.0.1:8000/`**
+- Interactive Swagger API Docs: **`http://127.0.0.1:8000/docs`**
 
 ---
 
 ## 🧪 Running Automated Unit Tests
 
 ```bash
-python -m unittest discover tests
+.venv\Scripts\python.exe -m unittest discover tests
 ```
 ```text
-Ran 46 tests in 12.092s
+Ran 145 tests in 0.247s
 
 OK
 ```
-
----
-
-## 🗺️ Product Roadmap
-
-- [x] **v1.5.0**: Autonomous Planner Agent, Reasoner, Executor, Validator & Capability-based Tool Resolution.
-- [x] **v1.6.0**: Document Intelligence RAG Engine with SQLite Persistent Vector Store.
-- [x] **v1.6.1**: FastAPI Application Layer, Swagger Documentation & Docker Support.
-- [x] **v1.7.0**: Vision Intelligence Engine, Playwright Browser Automation & Web UI Dashboard.
-- [ ] **v1.8.0**: Desktop Operator Engine (Mouse/Keyboard automation, App Manager, Windows Control).
-- [ ] **v1.9.0**: Long-Term User Memory & Personal Preference Sync Engine.
-- [ ] **v2.0.0**: Autonomous Multi-Agent AI OS Platform & Open-Source Plugin Ecosystem.
 
 ---
 

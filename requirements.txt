@@ -1,18 +1,34 @@
+# J.A.R.V.I.S. AI OS Production Dependencies (v4.7.0)
+
+# Core AI & LLM Providers
 google-genai
 python-dotenv
+requests
+httpx
+
+# FastAPI Server & Data Validation
+fastapi
+uvicorn[standard]
+pydantic
+python-multipart
+pyjwt
+passlib[bcrypt]
+
+# Production Database & Caching
+psycopg2-binary
+redis
+
+# Audio & Voice Engine
 SpeechRecognition
 pyaudio
 sounddevice
 soundfile
 edge-tts
 pygame
-pywhatkit
-requests
+
+# System & OS Automation
 screen-brightness-control
 pycaw
 comtypes
 wmi
-fastapi
-uvicorn
-pydantic
-python-multipart
+pywhatkit

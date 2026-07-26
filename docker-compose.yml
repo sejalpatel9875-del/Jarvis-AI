@@ -9,9 +9,15 @@ services:
     ports:
       - "8000:8000"
     environment:
+      - ENVIRONMENT=production
+      - DATABASE_URL=postgresql://jarvis_user:jarvis_pass@postgres:5432/jarvis_db
+      - REDIS_URL=redis://redis:6379/0
       - GROQ_API_KEY=${GROQ_API_KEY:-}
       - GEMINI_API_KEY=${GEMINI_API_KEY:-}
       - JARVIS_API_KEY=${JARVIS_API_KEY:-}
+    depends_on:
+      - postgres
+      - redis
     volumes:
       - ./logs:/app/logs
       - ./data:/app/data
@@ -21,3 +27,29 @@ services:
       interval: 30s
       timeout: 5s
       retries: 3
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: jarvis_postgres
+    environment:
+      - POSTGRES_USER=jarvis_user
+      - POSTGRES_PASSWORD=jarvis_pass
+      - POSTGRES_DB=jarvis_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: jarvis_redis
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
+  redis_data:

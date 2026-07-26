@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>J.A.R.V.I.S. AI OS — Autonomous Personal Assistant</title>
+    <title>J.A.R.V.I.S. AI OS — Autonomous Control Center</title>
     <!-- Modern Typography from Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,7 +23,7 @@
                 </div>
                 <div class="brand-text">
                     <h2>J.A.R.V.I.S. AI OS</h2>
-                    <span class="version-tag">v1.6.1 STABLE</span>
+                    <span class="version-tag">v2.5.0 STABLE</span>
                 </div>
             </div>
 
@@ -34,8 +34,8 @@
 
             <nav class="nav-menu">
                 <button class="nav-item active" data-tab="chat-tab">
-                    <i class="fa-solid fa-comments"></i>
-                    <span>AI Chat & Assistant</span>
+                    <i class="fa-solid fa-brain"></i>
+                    <span>AI Operator Center</span>
                 </button>
                 <button class="nav-item" data-tab="rag-tab">
                     <i class="fa-solid fa-file-contract"></i>
@@ -48,34 +48,34 @@
             </nav>
 
             <div class="provider-panel">
-                <h3><i class="fa-solid fa-server"></i> Active AI Providers</h3>
-                <div class="provider-item" id="providerGroq">
-                    <span><i class="fa-solid fa-bolt text-yellow"></i> Groq (Ultra-Fast)</span>
+                <h3><i class="fa-solid fa-server"></i> Active AI Agents</h3>
+                <div class="provider-item">
+                    <span><i class="fa-solid fa-compass text-yellow"></i> PlannerAgent</span>
                     <span class="badge badge-success">Active</span>
                 </div>
-                <div class="provider-item" id="providerGemini">
-                    <span><i class="fa-solid fa-cloud text-blue"></i> Gemini (Cloud)</span>
+                <div class="provider-item">
+                    <span><i class="fa-solid fa-globe text-blue"></i> ResearchAgent</span>
                     <span class="badge badge-success">Active</span>
                 </div>
-                <div class="provider-item" id="providerOllama">
-                    <span><i class="fa-solid fa-microchip text-purple"></i> Ollama (Offline)</span>
-                    <span class="badge badge-secondary">Ready</span>
+                <div class="provider-item">
+                    <span><i class="fa-solid fa-code text-purple"></i> CoderAgent</span>
+                    <span class="badge badge-success">Active</span>
                 </div>
-                <div class="provider-item" id="providerDb">
-                    <span><i class="fa-solid fa-database text-green"></i> SQLite Vector Store</span>
-                    <span class="badge badge-success">Connected</span>
+                <div class="provider-item">
+                    <span><i class="fa-solid fa-shield-halved text-green"></i> Security Interceptor</span>
+                    <span class="badge badge-success">Shield Active</span>
                 </div>
             </div>
         </aside>
 
         <!-- Main Content View -->
         <main class="main-content">
-            <!-- TAB 1: CHAT INTERFACE -->
+            <!-- TAB 1: CHAT INTERFACE & OPERATOR CENTER -->
             <section id="chat-tab" class="tab-content active">
                 <header class="chat-header">
                     <div class="chat-title">
-                        <h2>Jarvis Autonomous Agent OS</h2>
-                        <p>Hybrid Router (Groq &bull; Gemini &bull; Ollama) &bull; Persistent Memory</p>
+                        <h2>Jarvis Autonomous Operator Center</h2>
+                        <p>Multi-Agent Engine &bull; Task Queue Workflow &bull; Security Guardrail Interceptor</p>
                     </div>
                     <div class="header-actions">
                         <button class="btn btn-outline" id="clearChatBtn">
@@ -84,16 +84,43 @@
                     </div>
                 </header>
 
+                <!-- Live Agent Status Cards Grid -->
+                <div class="agents-grid" style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin: 12px 20px;">
+                    <div class="card" style="padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-compass" style="color:#eab308;"></i>
+                            <strong>PlannerAgent</strong>
+                        </div>
+                        <span style="font-size:0.8rem; color:#a1a1aa;">Goal Decomposer & Tool Executor</span>
+                    </div>
+
+                    <div class="card" style="padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-globe" style="color:#3b82f6;"></i>
+                            <strong>ResearchAgent</strong>
+                        </div>
+                        <span style="font-size:0.8rem; color:#a1a1aa;">Web Scraper & Document Knowledge Base</span>
+                    </div>
+
+                    <div class="card" style="padding: 12px; background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px;">
+                        <div style="display:flex; align-items:center; gap:8px;">
+                            <i class="fa-solid fa-code" style="color:#a855f7;"></i>
+                            <strong>CoderAgent</strong>
+                        </div>
+                        <span style="font-size:0.8rem; color:#a1a1aa;">Python Evaluator & Logic Solver</span>
+                    </div>
+                </div>
+
                 <div class="chat-messages" id="chatMessages">
                     <!-- Welcome Message -->
                     <div class="message-row assistant">
                         <div class="avatar"><i class="fa-solid fa-robot"></i></div>
                         <div class="message-bubble">
-                            <p>Namaste, Boss! I am <strong>Jarvis</strong> — your autonomous AI agent assistant. How can I help you today?</p>
+                            <p>Namaste, Boss! I am <strong>Jarvis v2.5</strong> — your autonomous AI Agent Operating System. How can I assist you today?</p>
                             <div class="quick-actions">
                                 <button class="chip" data-prompt="Calculate 15% of 800">🧮 15% of 800</button>
-                                <button class="chip" data-prompt="play despacito">🎵 Play Despacito</button>
-                                <button class="chip" data-prompt="Who are you?">🤖 Who are you?</button>
+                                <button class="chip" data-prompt="Search latest AI news online">🔍 AI News Search</button>
+                                <button class="chip" data-prompt="My name is Aryan and my company is FutureAI">👤 Set Profile</button>
                                 <button class="chip" data-prompt="What tools do you have?">🛠️ Active Tools</button>
                             </div>
                         </div>

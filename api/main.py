@@ -12,6 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from api.routes import router
+from api.middleware import SecurityHeadersMiddleware
 from core.constants import APP_NAME, APP_VERSION
 
 app = FastAPI(
@@ -21,6 +22,9 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc"
 )
+
+# Security Response Headers Middleware
+app.add_middleware(SecurityHeadersMiddleware)
 
 # Enable CORS for Web Dashboard
 app.add_middleware(

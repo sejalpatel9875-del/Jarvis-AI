@@ -121,7 +121,7 @@ class ReasonerEngine:
             )
 
         # Music detection
-        elif "play" in goal_lower and ("song" in goal_lower or "music" in goal_lower or "youtube" in goal_lower):
+        elif goal_lower.startswith("play ") or ("play" in goal_lower and ("song" in goal_lower or "music" in goal_lower or "youtube" in goal_lower)):
             song_name = re.sub(r'^(open\s+youtube\s+and\s+)?play\s+(song\s+)?', '', goal_lower, flags=re.IGNORECASE).strip()
             steps.append(
                 PlanStep(

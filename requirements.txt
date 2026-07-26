@@ -12,3 +12,7 @@ screen-brightness-control
 pycaw
 comtypes
 wmi
+fastapi
+uvicorn
+pydantic
+python-multipart

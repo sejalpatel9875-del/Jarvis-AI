@@ -28,7 +28,7 @@ CAPABILITY_TOOL_MAP = {
     "web_scrape": "browser",
     "system_control": "system",
     "music_playback": "music",
-    "document_read": "browser"
+    "document_read": "document"
 }
 
 class StepExecutor:

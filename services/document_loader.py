@@ -82,7 +82,7 @@ class DocumentLoader:
                         metadata={"total_pages": total}
                     )
                 )
-        except ImportError:
+        except Exception:
             try:
                 import PyPDF2
                 reader = PyPDF2.PdfReader(filepath)

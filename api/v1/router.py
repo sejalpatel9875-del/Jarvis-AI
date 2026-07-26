@@ -1,6 +1,6 @@
 """
 Purpose:
-API v1 Router Specifications for Jarvis AI OS (Sprint v4.2 Enterprise SaaS Core).
+API v1 Router Specifications for Jarvis AI OS (Sprint v4.3 Universal Knowledge Intelligence Platform).
 
 Namespaces:
 - /api/v1/chat
@@ -16,6 +16,9 @@ Namespaces:
 - /api/v1/apikeys
 - /api/v1/audit-logs
 - /api/v1/ceo-dashboard
+- /api/v1/knowledge/query
+- /api/v1/knowledge/report
+- /api/v1/knowledge/timeline
 """
 
 from fastapi import APIRouter
@@ -40,6 +43,9 @@ from core.rbac import rbac_service
 from services.api_keys import api_key_service
 from services.audit_logger import audit_logger
 from services.dashboard import ceo_dashboard
+from services.knowledge_engine import knowledge_engine
+from services.report_generator import report_generator
+from services.knowledge_timeline import knowledge_timeline
 
 v1_router = APIRouter(prefix="/v1")
 
@@ -93,3 +99,16 @@ def get_audit_logs_endpoint(org_id: str = None, workspace_id: str = None):
 @v1_router.get("/ceo-dashboard", tags=["v1 SaaS Core"])
 def get_ceo_dashboard_endpoint(org_id: str = None):
     return {"dashboard": ceo_dashboard.get_dashboard_summary(org_id)}
+
+# Knowledge Intelligence Platform Endpoints
+@v1_router.post("/knowledge/query", tags=["v1 Knowledge Platform"])
+def query_knowledge_endpoint(workspace_id: str, query: str, top_k: int = 5):
+    return knowledge_engine.query_workspace_knowledge(workspace_id, query, top_k)
+
+@v1_router.post("/knowledge/report", tags=["v1 Knowledge Platform"])
+def generate_report_endpoint(title: str, topic: str, context_text: str = ""):
+    return report_generator.generate_executive_report(title, topic, context_text)
+
+@v1_router.get("/knowledge/timeline", tags=["v1 Knowledge Platform"])
+def get_timeline_endpoint(workspace_id: str = "default", limit: int = 30):
+    return {"timeline": knowledge_timeline.get_timeline(workspace_id, limit)}

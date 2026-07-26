@@ -103,6 +103,7 @@ jarvis/
 │   ├── knowledge_engine.py     # Workspace RAG Engine
 │   ├── lead_ai_assistant.py    # AI Sales Co-Pilot Engine
 │   ├── onboarding_wizard.py    # Guided 4-Step Onboarding Tracker
+│   ├── redis_cache.py          # O(1) Redis Query Caching
 │   ├── team_inbox.py           # Departmental Team Messaging
 │   └── universal_document_loader.py # PDF/DOCX/XLSX Universal Loader
 ├── web/                        # Commercial SaaS Landing Page

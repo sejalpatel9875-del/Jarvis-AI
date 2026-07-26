@@ -35,7 +35,6 @@ router = APIRouter()
 brain = JarvisBrain()
 chunker = SemanticChunker(chunk_size=400, chunk_overlap=50)
 
-@router.get("/", response_model=StatusResponse, tags=["System"])
 @router.get("/status", response_model=StatusResponse, tags=["System"])
 def get_status():
     """Returns system status and active tool registry items."""

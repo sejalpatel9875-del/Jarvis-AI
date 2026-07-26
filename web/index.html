@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>J.A.R.V.I.S. AI OS — Autonomous Business AI Operating System</title>
+    <meta name="description" content="Empower your organization with J.A.R.V.I.S. AI OS. Multi-tenant workspaces, RAG document intelligence, AI sales CRM co-pilot, and no-code automation engine.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dark-theme">
+
+    <!-- Navigation Bar -->
+    <nav class="navbar" id="main-nav">
+        <div class="nav-container">
+            <div class="logo">
+                <span class="logo-badge">OS v4.7</span>
+                <span class="logo-text">J.A.R.V.I.S. <span class="highlight">AI OS</span></span>
+            </div>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#demo">Live Demo</a></li>
+                <li><a href="#pricing">Pricing</a></li>
+                <li><a href="#faq">FAQ</a></li>
+            </ul>
+            <div class="nav-actions">
+                <button class="btn btn-outline" id="btn-login">Sign In</button>
+                <button class="btn btn-primary" id="btn-signup">Start Free Trial</button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero-section">
+        <div class="hero-content">
+            <div class="status-pill">
+                <span class="pulse-dot"></span>
+                <span>v4.7.0 Production Release — Commercial Beta Live</span>
+            </div>
+            <h1 class="hero-title">
+                The Autonomous <span class="gradient-text">Business AI Operating System</span>
+            </h1>
+            <p class="hero-subtitle">
+                Transform your company into a self-operating enterprise. RAG Knowledge Bases, AI Sales CRM Co-Pilots, No-Code Workflows, and Departmental Workspaces in one platform.
+            </p>
+            <div class="hero-buttons">
+                <a href="#demo" class="btn btn-hero-primary" id="hero-cta-demo">Explore Interactive Demo</a>
+                <a href="#pricing" class="btn btn-hero-secondary" id="hero-cta-plans">View Commercial Plans</a>
+            </div>
+            <div class="hero-metrics">
+                <div class="metric-item">
+                    <span class="metric-value">100%</span>
+                    <span class="metric-label">Automated Test Pass</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-value">O(1)</span>
+                    <span class="metric-label">Redis Cache Speed</span>
+                </div>
+                <div class="metric-item">
+                    <span class="metric-value">Multi-Tenant</span>
+                    <span class="metric-label">Isolated Workspaces</span>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Interactive Live Demo Section -->
+    <section class="demo-section" id="demo">
+        <div class="section-header">
+            <h2>Experience <span class="gradient-text">J.A.R.V.I.S. in Action</span></h2>
+            <p>Switch tabs to test live interactive previews of key business modules.</p>
+        </div>
+        <div class="demo-container glass-card">
+            <div class="demo-tabs">
+                <button class="tab-btn active" data-tab="dashboard-preview">CEO Dashboard</button>
+                <button class="tab-btn" data-tab="crm-preview">Lead CRM & Co-Pilot</button>
+                <button class="tab-btn" data-tab="automation-preview">No-Code Workflows</button>
+                <button class="tab-btn" data-tab="activity-preview">Live Activity Feed</button>
+            </div>
+            <div class="demo-content">
+                <!-- CEO Dashboard Preview -->
+                <div class="tab-pane active" id="dashboard-preview">
+                    <div class="dash-grid">
+                        <div class="dash-card">
+                            <h3>Revenue Pipeline</h3>
+                            <p class="dash-num">$42,500.00</p>
+                            <span class="dash-sub text-success">+18% this month</span>
+                        </div>
+                        <div class="dash-card">
+                            <h3>Active Leads</h3>
+                            <p class="dash-num">38</p>
+                            <span class="dash-sub">12 High Intent</span>
+                        </div>
+                        <div class="dash-card">
+                            <h3>Automation Tasks</h3>
+                            <p class="dash-num">156</p>
+                            <span class="dash-sub">99.8% Success Rate</span>
+                        </div>
+                        <div class="dash-card">
+                            <h3>System Health</h3>
+                            <p class="dash-num text-success">HEALTHY</p>
+                            <span class="dash-sub">PostgreSQL + Redis</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- CRM Preview -->
+                <div class="tab-pane" id="crm-preview">
+                    <div class="crm-demo-box">
+                        <div class="lead-item">
+                            <div>
+                                <h4>Acme Enterprise Corp</h4>
+                                <p>jane@acme.com • Inbound Lead</p>
+                            </div>
+                            <span class="score-badge hot">Score: 92/100 (Hot)</span>
+                            <button class="btn btn-sm btn-primary" id="btn-draft-email">Draft AI Email</button>
+                        </div>
+                        <div class="ai-email-box" id="email-preview-box">
+                            <strong>AI Co-Pilot Drafted Email:</strong>
+                            <p id="email-draft-text">"Hi Jane, I noticed Acme Corp is exploring autonomous AI capabilities. J.A.R.V.I.S. AI OS enables teams to automate workflows and knowledge RAG with multi-tenant isolation. Open for a 10-min demo?"</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Automation Preview -->
+                <div class="tab-pane" id="automation-preview">
+                    <div class="workflow-builder">
+                        <div class="wf-step">1. Trigger: Document Uploaded (.PDF)</div>
+                        <div class="wf-arrow">↓</div>
+                        <div class="wf-step">2. Action: Extract RAG Knowledge Facts</div>
+                        <div class="wf-arrow">↓</div>
+                        <div class="wf-step">3. Action: Generate Executive Summary & Notify CEO</div>
+                    </div>
+                </div>
+
+                <!-- Activity Feed Preview -->
+                <div class="tab-pane" id="activity-preview">
+                    <ul class="activity-list">
+                        <li><span class="time">10:00 AM</span> Rahul created lead <strong>Acme Enterprise Corp</strong></li>
+                        <li><span class="time">10:05 AM</span> Jarvis AI drafted sales outreach email</li>
+                        <li><span class="time">10:10 AM</span> Deal stage moved to <strong>QUALIFIED</strong> ($25,000)</li>
+                        <li><span class="time">10:15 AM</span> Executive Q3 Strategy Report generated</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Features Grid -->
+    <section class="features-section" id="features">
+        <div class="section-header">
+            <h2>Built for <span class="gradient-text">Scalable Enterprise SaaS</span></h2>
+            <p>Everything your business needs to automate operations, sales, and knowledge management.</p>
+        </div>
+        <div class="features-grid">
+            <div class="feature-card glass-card">
+                <div class="feature-icon">🧠</div>
+                <h3>Universal Vector RAG</h3>
+                <p>Ingest PDF, DOCX, PPTX, XLSX, CSV, and Markdown files. Multi-tenant workspace isolated semantic recall with page citations.</p>
+            </div>
+            <div class="feature-card glass-card">
+                <div class="feature-icon">💼</div>
+                <h3>Sales CRM Co-Pilot</h3>
+                <p>Automate lead qualification, intent scoring (0-100), deal pipeline tracking, and 1-click personalized email outreach drafting.</p>
+            </div>
+            <div class="feature-card glass-card">
+                <div class="feature-icon">⚡</div>
+                <h3>No-Code Automations</h3>
+                <p>Trigger-condition-action workflow engine. Run background cron jobs, recurring reports, and automated retry backoff loops.</p>
+            </div>
+            <div class="feature-card glass-card">
+                <div class="feature-icon">⌨️</div>
+                <h3>Command Palette (Ctrl + K)</h3>
+                <p>Keyboard-driven instant navigation, global search across all workspace entities, and quick action execution.</p>
+            </div>
+            <div class="feature-card glass-card">
+                <div class="feature-icon">🛡️</div>
+                <h3>Role-Based Access (RBAC)</h3>
+                <p>Granular Owner, Admin, Manager, Employee, and Guest permissions matrix with workspace API key authentication.</p>
+            </div>
+            <div class="feature-card glass-card">
+                <div class="feature-icon">📊</div>
+                <h3>CEO Command Center</h3>
+                <p>Real-time consolidated business dashboard analytics, GitHub-style activity feed, and departmental team inbox.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Commercial Pricing -->
+    <section class="pricing-section" id="pricing">
+        <div class="section-header">
+            <h2>Simple, Transparent <span class="gradient-text">Commercial Pricing</span></h2>
+            <p>Start free during Commercial Beta, upgrade as your team grows.</p>
+        </div>
+        <div class="pricing-grid">
+            <!-- Free Tier -->
+            <div class="pricing-card glass-card">
+                <h3>Free Beta</h3>
+                <div class="price">$0 <span>/ month</span></div>
+                <p>For individuals and small testing teams.</p>
+                <ul class="price-features">
+                    <li>1 Workspace</li>
+                    <li>100 AI Requests / Day</li>
+                    <li>Basic Vector Memory</li>
+                    <li>Community Support</li>
+                </ul>
+                <button class="btn btn-outline w-100" id="btn-tier-free">Get Started Free</button>
+            </div>
+            <!-- Pro Tier -->
+            <div class="pricing-card glass-card featured">
+                <div class="popular-tag">Most Popular</div>
+                <h3>Pro Plan</h3>
+                <div class="price">$49 <span>/ month</span></div>
+                <p>For fast-growing startups and sales teams.</p>
+                <ul class="price-features">
+                    <li>5 Workspaces</li>
+                    <li>1,000 AI Requests / Day</li>
+                    <li>Universal RAG Document Loader</li>
+                    <li>AI Sales CRM & Co-Pilot</li>
+                    <li>Priority Email Support</li>
+                </ul>
+                <button class="btn btn-primary w-100" id="btn-tier-pro">Start Pro Trial</button>
+            </div>
+            <!-- Business Tier -->
+            <div class="pricing-card glass-card">
+                <h3>Business Enterprise</h3>
+                <div class="price">$199 <span>/ month</span></div>
+                <p>For complete organizational automation.</p>
+                <ul class="price-features">
+                    <li>Unlimited Workspaces & Teams</li>
+                    <li>10,000+ AI Requests / Day</li>
+                    <li>Full No-Code Automation Engine</li>
+                    <li>Granular RBAC & API Keys</li>
+                    <li>Dedicated Account Manager</li>
+                </ul>
+                <button class="btn btn-outline w-100" id="btn-tier-biz">Contact Sales</button>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ Section -->
+    <section class="faq-section" id="faq">
+        <div class="section-header">
+            <h2>Frequently Asked <span class="gradient-text">Questions</span></h2>
+        </div>
+        <div class="faq-grid">
+            <div class="faq-card glass-card">
+                <h4>What makes J.A.R.V.I.S. AI OS different from basic LLM wrappers?</h4>
+                <p>J.A.R.V.I.S. is a complete Autonomous Business Operating System featuring multi-tenant workspace isolation, persistent vector memory, no-code workflow pipelines, and RBAC security.</p>
+            </div>
+            <div class="faq-card glass-card">
+                <h4>Is my company data kept isolated?</h4>
+                <p>Yes! Every workspace maintains dedicated isolated databases and vector indexes, ensuring total data privacy between departments and organizations.</p>
+            </div>
+            <div class="faq-card glass-card">
+                <h4>How does the AI Sales Co-Pilot work?</h4>
+                <p>It automatically analyzes inbound leads, calculates a quality intent score (0-100), drafts personalized sales follow-up emails, and summarizes meeting transcripts.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="footer-container">
+            <p>&copy; 2026 J.A.R.V.I.S. AI Operating System. Built with Product-First Excellence.</p>
+            <p><a href="#privacy">Privacy Policy</a> • <a href="#terms">Terms of Service</a> • <a href="#docs">API Documentation</a></p>
+        </div>
+    </footer>
+
+    <script src="app.js"></script>
+</body>
+</html>

@@ -27,12 +27,15 @@ app = FastAPI(
 # Security Response Headers Middleware
 app.add_middleware(SecurityHeadersMiddleware)
 
-# Enable CORS for Web Dashboard
+# Configurable Production CORS Middleware
+raw_cors = os.getenv("CORS_ORIGINS", "*")
+allowed_origins = [origin.strip() for origin in raw_cors.split(",") if origin.strip()]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
-    allow_credentials=True,
-    allow_methods=["*"],
+    allow_origins=allowed_origins,
+    allow_credentials=True if allowed_origins != ["*"] else False,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
 

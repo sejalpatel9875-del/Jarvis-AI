@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.7.0-alpha2] - 2026-07-26 (PLAYWRIGHT BROWSER AUTOMATION RELEASE)
+
+### ✨ Added
+- **Browser Automation Service ([services/browser_automation.py](file:///c:/Users/Aryan/Documents/jarvis/services/browser_automation.py))**: Playwright & resilient HTTP browser automation for clean text extraction and webpage screenshots.
+- **Playwright Browser Tool ([tools/browser.py](file:///c:/Users/Aryan/Documents/jarvis/tools/browser.py))**: Upgraded `BrowserTool` registered into `ToolRegistry` supporting `fetch` and `screenshot` actions.
+- Automated browser automation unit test suite in [tests/test_browser_automation.py](file:///c:/Users/Aryan/Documents/jarvis/tests/test_browser_automation.py).
+
+---
+
 ## [v1.7.0-alpha1] - 2026-07-26 (VISION & STREAMING CHAT RELEASE)
 
 ### ✨ Added

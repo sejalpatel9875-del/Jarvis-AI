@@ -8,3 +8,4 @@ import tools.search
 import tools.system
 import tools.browser
 import tools.document
+import tools.vision

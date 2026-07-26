@@ -47,6 +47,8 @@ class ReasonerEngine:
                 capabilities.add(Capability.MUSIC_PLAYBACK.value)
             elif name == "document":
                 capabilities.add(Capability.DOCUMENT_READ.value)
+            elif name == "vision":
+                capabilities.add(Capability.VISION_ANALYSIS.value)
         return list(capabilities)
 
     def is_casual_query(self, goal: str) -> bool:
@@ -79,8 +81,22 @@ class ReasonerEngine:
         steps: List[PlanStep] = []
 
         # 2. Rule-Based & Semantic Capability Parsing
+        # Vision Intelligence detection
+        if any(kw in goal_lower for kw in ["screenshot", "take snap", "ocr", "read screen", "screen text"]):
+            action_type = "ocr" if any(kw in goal_lower for kw in ["ocr", "read", "text"]) else "screenshot"
+            steps.append(
+                PlanStep(
+                    step_number=1,
+                    description=f"Capture screen and run Vision analysis ({action_type})",
+                    capability=Capability.VISION_ANALYSIS.value,
+                    args={"action": action_type},
+                    confidence=0.98,
+                    estimated_latency=0.5
+                )
+            )
+
         # Document RAG detection
-        if any(kw in goal_lower for kw in [".pdf", ".docx", "document", "read file", "page ", "index pdf", "summarize pdf"]):
+        elif any(kw in goal_lower for kw in [".pdf", ".docx", "document", "read file", "page ", "index pdf", "summarize pdf"]):
             filepath_match = re.search(r'([\w\:\/\\\.\-]+\.(?:pdf|docx|txt|md|csv|log))', goal_text, flags=re.IGNORECASE)
             filepath = filepath_match.group(1) if filepath_match else ""
             

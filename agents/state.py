@@ -45,6 +45,7 @@ class Capability(str, Enum):
     SYSTEM_CONTROL = "system_control"
     MUSIC_PLAYBACK = "music_playback"
     DOCUMENT_READ = "document_read"
+    VISION_ANALYSIS = "vision_analysis"
 
 @dataclass
 class ExecutionEvent:

@@ -19,7 +19,9 @@ Dependencies:
 import os
 import time
 import tempfile
+import json
 from fastapi import APIRouter, File, UploadFile, HTTPException, Query
+from fastapi.responses import StreamingResponse
 from schemas.chat import ChatRequest, ChatResponse
 from schemas.document import DocumentQueryRequest, DocumentQueryResponse, DocumentChunkDTO
 from schemas.system import HealthResponse, MetricsResponse, StatusResponse
@@ -178,3 +180,24 @@ def query_documents(request: DocumentQueryRequest):
         )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/chat/stream", tags=["Chat AI"])
+def chat_stream_endpoint(request: ChatRequest):
+    """
+    Streaming Chat Endpoint (Server-Sent Events).
+    Streams AI tokens live word-by-word just like ChatGPT.
+    """
+    def token_generator():
+        try:
+            reply, _ = brain.think(request.message)
+            words = reply.split(" ")
+            for w in words:
+                data = json.dumps({"token": w + " "})
+                yield f"data: {data}\n\n"
+                time.sleep(0.04)  # Simulate smooth token streaming speed
+            yield f"data: [DONE]\n\n"
+        except Exception as err:
+            err_data = json.dumps({"error": str(err)})
+            yield f"data: {err_data}\n\n"
+
+    return StreamingResponse(token_generator(), media_type="text/event-stream")

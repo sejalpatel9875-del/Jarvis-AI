@@ -10,6 +10,7 @@ document.addEventListener("DOMContentLoaded", () => {
     const userInput = document.getElementById("userInput");
     const chatMessages = document.getElementById("chatMessages");
     const clearChatBtn = document.getElementById("clearChatBtn");
+    const voiceBtn = document.getElementById("voiceBtn");
     const dropzone = document.getElementById("dropzone");
     const fileInput = document.getElementById("fileInput");
     const uploadStatus = document.getElementById("uploadStatus");
@@ -38,7 +39,7 @@ document.addEventListener("DOMContentLoaded", () => {
         chip.addEventListener("click", () => {
             const prompt = chip.getAttribute("data-prompt");
             userInput.value = prompt;
-            sendChatMessage(prompt);
+            sendChatMessageStream(prompt);
         });
     });
 
@@ -54,38 +55,112 @@ document.addEventListener("DOMContentLoaded", () => {
         `;
     });
 
-    // 4. Submit Chat Form
+    // 4. Voice Input (Web Speech API)
+    if ("webkitSpeechRecognition" in window || "SpeechRecognition" in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.continuous = false;
+        recognition.interimResults = false;
+        recognition.lang = "en-US";
+
+        voiceBtn.addEventListener("click", () => {
+            voiceBtn.style.color = "#ef4444";
+            recognition.start();
+        });
+
+        recognition.onresult = (event) => {
+            voiceBtn.style.color = "";
+            const transcript = event.results[0][0].transcript;
+            userInput.value = transcript;
+            sendChatMessageStream(transcript);
+        };
+
+        recognition.onerror = () => {
+            voiceBtn.style.color = "";
+        };
+
+        recognition.onend = () => {
+            voiceBtn.style.color = "";
+        };
+    } else {
+        voiceBtn.style.display = "none";
+    }
+
+    // 5. Submit Chat Form (Streaming Response)
     chatForm.addEventListener("submit", (e) => {
         e.preventDefault();
         const text = userInput.value.trim();
         if (text) {
-            sendChatMessage(text);
+            sendChatMessageStream(text);
         }
     });
 
-    async function sendChatMessage(message) {
-        // Append User Message
+    async function sendChatMessageStream(message) {
         appendMessage("user", message);
         userInput.value = "";
 
-        // Typing Indicator
-        const typingId = appendTypingIndicator();
+        // Create Assistant Message Row for Live Token Streaming
+        const row = document.createElement("div");
+        row.className = "message-row assistant";
+        const id = "msg_" + Date.now();
+        row.id = id;
+
+        row.innerHTML = `
+            <div class="avatar"><i class="fa-solid fa-robot"></i></div>
+            <div class="message-bubble">
+                <p id="p_${id}"><em>Jarvis is thinking...</em></p>
+                <div style="font-size: 11px; color: #94a3b8; margin-top: 8px;"><i class="fa-solid fa-bolt"></i> Streaming Router &bull; Live</div>
+            </div>
+        `;
+        chatMessages.appendChild(row);
+        chatMessages.scrollTop = chatMessages.scrollHeight;
+
+        const pEl = document.getElementById(`p_${id}`);
+        let fullText = "";
 
         try {
-            const res = await fetch("/chat", {
+            const res = await fetch("/chat/stream", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ message: message })
             });
 
-            removeMessage(typingId);
             if (!res.ok) throw new Error("API Error: " + res.statusText);
 
-            const data = await res.json();
-            appendMessage("assistant", data.assistant_reply, data.provider, data.latency);
+            const reader = res.body.getReader();
+            const decoder = new TextDecoder("utf-8");
+            pEl.innerHTML = "";
+
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+
+                const chunk = decoder.decode(value);
+                const lines = chunk.split("\n\n");
+
+                for (const line of lines) {
+                    if (line.startsWith("data: ")) {
+                        const rawData = line.replace("data: ", "").trim();
+                        if (rawData === "[DONE]") break;
+
+                        try {
+                            const parsed = JSON.parse(rawData);
+                            if (parsed.token) {
+                                fullText += parsed.token;
+                                pEl.innerText = fullText;
+                                chatMessages.scrollTop = chatMessages.scrollHeight;
+                            }
+                        } catch (e) {}
+                    }
+                }
+            }
+
+            if (!fullText) {
+                pEl.innerText = "Command executed successfully, Boss.";
+            }
+
         } catch (err) {
-            removeMessage(typingId);
-            appendMessage("assistant", "⚠️ Error communicating with Jarvis backend: " + err.message);
+            pEl.innerText = "⚠️ Error communicating with Jarvis backend: " + err.message;
         }
     }
 
@@ -114,28 +189,7 @@ document.addEventListener("DOMContentLoaded", () => {
         return id;
     }
 
-    function appendTypingIndicator() {
-        const row = document.createElement("div");
-        row.className = "message-row assistant";
-        const id = "typing_" + Date.now();
-        row.id = id;
-        row.innerHTML = `
-            <div class="avatar"><i class="fa-solid fa-robot"></i></div>
-            <div class="message-bubble">
-                <p><em>Jarvis is thinking...</em></p>
-            </div>
-        `;
-        chatMessages.appendChild(row);
-        chatMessages.scrollTop = chatMessages.scrollHeight;
-        return id;
-    }
-
-    function removeMessage(id) {
-        const el = document.getElementById(id);
-        if (el) el.remove();
-    }
-
-    // 5. File Upload Logic
+    // 6. File Upload Logic
     dropzone.addEventListener("click", () => fileInput.click());
     fileInput.addEventListener("change", () => {
         if (fileInput.files.length > 0) {
@@ -163,7 +217,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 6. RAG Query Logic
+    // 7. RAG Query Logic
     ragQueryBtn.addEventListener("click", executeRagQuery);
     ragQueryInput.addEventListener("keypress", (e) => {
         if (e.key === "Enter") executeRagQuery();
@@ -202,7 +256,7 @@ document.addEventListener("DOMContentLoaded", () => {
         }
     }
 
-    // 7. Telemetry Metrics Fetching
+    // 8. Telemetry Metrics Fetching
     async function fetchMetrics() {
         try {
             const res = await fetch("/metrics");

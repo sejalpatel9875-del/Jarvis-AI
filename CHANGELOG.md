@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.7.0-alpha1] - 2026-07-26 (VISION & STREAMING CHAT RELEASE)
+
+### ✨ Added
+- **Vision Intelligence Service ([services/vision.py](file:///c:/Users/Aryan/Documents/jarvis/services/vision.py))**: Desktop screen capture (`PIL.ImageGrab`) and OCR text extraction.
+- **Vision Tool ([tools/vision.py](file:///c:/Users/Aryan/Documents/jarvis/tools/vision.py))**: `VisionTool` registered into `ToolRegistry` under `Capability.VISION_ANALYSIS`.
+- **Streaming Chat Endpoint (`POST /chat/stream`)**: Server-Sent Events (SSE) token streaming endpoint in [api/routes.py](file:///c:/Users/Aryan/Documents/jarvis/api/routes.py).
+- **Web Dashboard Voice Input & Token Typing Animation ([static/app.js](file:///c:/Users/Aryan/Documents/jarvis/static/app.js))**: Web Speech API microphone voice recognition and real-time word-by-word streaming token rendering.
+- Automated unit test suite in [tests/test_vision.py](file:///c:/Users/Aryan/Documents/jarvis/tests/test_vision.py).
+
+---
+
 ## [v1.6.1] - 2026-07-26 (FASTAPI STABILIZATION RELEASE)
 
 ### ✨ Added
@@ -20,14 +31,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `POST /documents/query`: Document RAG query endpoint with citations.
 - **Planner Fixes**: Corrected capability mapping in `agents/executor.py` (`document_read` -> `document` tool) and updated music pattern matching in `agents/reasoner.py`.
 - Automated API test suite in [tests/test_api.py](file:///c:/Users/Aryan/Documents/jarvis/tests/test_api.py).
-
----
-
-## [v1.6.0] - 2026-07-26 (STABLE RELEASE)
-
-### ✨ Added
-- **File Intelligence & Document RAG Knowledge Base**: Complete PDF, DOCX, TXT, MD, CSV, LOG extraction pipeline.
-- **Persistent SQLite Vector Storage ([providers/embedding.py](file:///c:/Users/Aryan/Documents/jarvis/providers/embedding.py))**: SQLite vector store surviving application restarts with metadata filtering (`filter_source`, `filter_type`).
-- **Multi-Document Comparison**: Side-by-side contract & document comparison with page citations.
-- **Planner Agent Integration**: `Capability.DOCUMENT_READ` registered in Reasoner & ToolRegistry.
-- **Documentation Redesign**: Complete architecture diagrams, capabilities showcase, and benchmarks in `README.md`.

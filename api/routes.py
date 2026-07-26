@@ -3,12 +3,13 @@ Purpose:
 FastAPI APIRouter definitions for Jarvis AI OS Web & REST API endpoints.
 
 Responsibilities:
-- Provide HTTP REST endpoints (/health, /status, /metrics, /chat, /upload, /documents/query, /tasks)
-- Delegate requests to JarvisBrain, TaskQueueService, DocumentLoader, VectorStore, and Telemetry metrics
+- Provide HTTP REST endpoints (/health, /status, /metrics, /chat, /upload, /documents/query, /tasks, /auth)
+- Delegate requests to JarvisBrain, AuthService, TaskQueueService, DocumentLoader, VectorStore, and Telemetry metrics
 
 Dependencies:
 - fastapi
 - agents/brain.py
+- core/auth.py
 - services/task_queue.py
 - services/metrics.py
 - services/document_loader.py
@@ -27,6 +28,7 @@ from schemas.chat import ChatRequest, ChatResponse
 from schemas.document import DocumentQueryRequest, DocumentQueryResponse, DocumentChunkDTO
 from schemas.system import HealthResponse, MetricsResponse, StatusResponse
 from core.constants import APP_NAME, APP_VERSION
+from core.auth import auth_service
 from agents.brain import JarvisBrain
 from services.task_queue import task_queue
 from services.metrics import metrics_tracker
@@ -69,6 +71,22 @@ def health_check():
         version=APP_VERSION,
         providers=providers_status
     )
+
+@router.post("/auth/register", tags=["User Auth"])
+def register_account(email: str, user_name: str, password: str):
+    """Registers a new user account."""
+    res = auth_service.register_user(email, user_name, password)
+    if not res["success"]:
+        raise HTTPException(status_code=400, detail=res["error"])
+    return res
+
+@router.post("/auth/login", tags=["User Auth"])
+def login_account(email: str, password: str):
+    """Authenticates user and issues session token."""
+    res = auth_service.login_user(email, password)
+    if not res["success"]:
+        raise HTTPException(status_code=401, detail=res["error"])
+    return res
 
 @router.get("/metrics", response_model=MetricsResponse, tags=["Metrics"])
 def get_metrics():

@@ -9,3 +9,6 @@ import tools.system
 import tools.browser
 import tools.document
 import tools.vision
+import tools.github_tool
+import tools.email_tool
+import tools.file_tool

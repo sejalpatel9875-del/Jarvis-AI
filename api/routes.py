@@ -3,12 +3,13 @@ Purpose:
 FastAPI APIRouter definitions for Jarvis AI OS Web & REST API endpoints.
 
 Responsibilities:
-- Provide HTTP REST endpoints (/health, /status, /metrics, /chat, /upload, /documents/query)
-- Delegate requests to JarvisBrain, DocumentLoader, VectorStore, and Telemetry metrics
+- Provide HTTP REST endpoints (/health, /status, /metrics, /chat, /upload, /documents/query, /tasks)
+- Delegate requests to JarvisBrain, TaskQueueService, DocumentLoader, VectorStore, and Telemetry metrics
 
 Dependencies:
 - fastapi
 - agents/brain.py
+- services/task_queue.py
 - services/metrics.py
 - services/document_loader.py
 - services/chunker.py
@@ -27,6 +28,7 @@ from schemas.document import DocumentQueryRequest, DocumentQueryResponse, Docume
 from schemas.system import HealthResponse, MetricsResponse, StatusResponse
 from core.constants import APP_NAME, APP_VERSION
 from agents.brain import JarvisBrain
+from services.task_queue import task_queue
 from services.metrics import metrics_tracker
 from services.document_loader import DocumentLoader
 from services.chunker import SemanticChunker
@@ -92,6 +94,18 @@ def get_metrics():
         ollama_calls=ollama_data.get("total_calls", 0),
         avg_latency=avg_lat
     )
+
+@router.get("/tasks", tags=["Task Engine"])
+def list_tasks():
+    """Returns list of all queued and running asynchronous tasks."""
+    return {"tasks": task_queue.list_tasks()}
+
+@router.post("/tasks", tags=["Task Engine"])
+def create_task(description: str, steps: str = "Step 1: Planning, Step 2: Executing, Step 3: Verifying"):
+    """Creates a new multi-step long running background task."""
+    step_list = [s.strip() for s in steps.split(",") if s.strip()]
+    t = task_queue.create_task(description, step_list)
+    return {"status": "success", "task": t.to_dict()}
 
 @router.post("/chat", response_model=ChatResponse, tags=["Chat AI"])
 def chat_endpoint(request: ChatRequest):

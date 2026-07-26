@@ -4,7 +4,7 @@ Central System Constants & Version Specifications for Jarvis AI OS.
 """
 
 APP_NAME = "J.A.R.V.I.S. AI OS"
-APP_VERSION = "1.9.0"
+APP_VERSION = "2.0.0"
 DEFAULT_USER_TITLE = "Boss"
 DEFAULT_ASSISTANT_NAME = "Jarvis"
 

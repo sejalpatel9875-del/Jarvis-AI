@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.6.0] - 2026-07-26 (STABLE RELEASE)
+
+### ✨ Added
+- **File Intelligence & Document RAG Knowledge Base**: Complete PDF, DOCX, TXT, MD, CSV, LOG extraction pipeline.
+- **Persistent SQLite Vector Storage ([providers/embedding.py](file:///c:/Users/Aryan/Documents/jarvis/providers/embedding.py))**: SQLite vector store surviving application restarts with metadata filtering (`filter_source`, `filter_type`).
+- **Multi-Document Comparison**: Side-by-side contract & document comparison with page citations.
+- **Planner Agent Integration**: `Capability.DOCUMENT_READ` registered in Reasoner & ToolRegistry.
+- **Documentation Redesign**: Complete architecture diagrams, capabilities showcase, and benchmarks in `README.md`.
+
+---
+
 ## [v1.6.0-alpha2] - 2026-07-26
 
 ### ✨ Added
@@ -25,32 +36,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **VectorStore & Embedding Provider ([providers/embedding.py](file:///c:/Users/Aryan/Documents/jarvis/providers/embedding.py))**: Zero-cost local term frequency vector embeddings and cosine similarity search.
 - **Document RAG Tool ([tools/document.py](file:///c:/Users/Aryan/Documents/jarvis/tools/document.py))**: `DocumentTool` registered into `ToolRegistry` for document indexing and querying.
 - Automated unit test suite in `tests/test_document.py`.
-
----
-
-## [v1.5.2] - 2026-07-25
-
-### ✨ Added
-- **Core Package ([core/](file:///c:/Users/Aryan/Documents/jarvis/core))**: Centralized `constants.py`, custom `exceptions.py` hierarchy, and `interfaces.py`.
-- **Modern Project Tooling**: `pyproject.toml` configuration for Black, Ruff, and Mypy.
-- Pre-commit hooks configuration ([.pre-commit-config.yaml](file:///c:/Users/Aryan/Documents/jarvis/.pre-commit-config.yaml)).
-- Performance Benchmark Suite ([scripts/benchmark.py](file:///c:/Users/Aryan/Documents/jarvis/scripts/benchmark.py)).
-
----
-
-## [v1.5.1] - 2026-07-25
-
-### ✨ Added
-- GitHub Actions CI workflow ([.github/workflows/test.yml](file:///c:/Users/Aryan/Documents/jarvis/.github/workflows/test.yml)).
-- Open-source MIT License ([LICENSE](file:///c:/Users/Aryan/Documents/jarvis/LICENSE)).
-- Open-source Contribution Guide ([CONTRIBUTING.md](file:///c:/Users/Aryan/Documents/jarvis/CONTRIBUTING.md)).
-- GitHub issue templates and pull request templates.
-- Environment validator ([utils/env_validator.py](file:///c:/Users/Aryan/Documents/jarvis/utils/env_validator.py)) and structured production logger ([utils/logger.py](file:///c:/Users/Aryan/Documents/jarvis/utils/logger.py)).
-
----
-
-## [v1.5.0] - 2026-07-25 (STABLE RELEASE)
-
-### ✨ Added
-- **Autonomous Planner Agent ([agents/planner.py](file:///c:/Users/Aryan/Documents/jarvis/agents/planner.py))**: Master orchestrator connecting Reasoner -> Executor -> Validator -> Final LLM Synthesis.
-- Full `JarvisBrain` integration delegating user goals to PlannerAgent.

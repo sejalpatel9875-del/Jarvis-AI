@@ -39,9 +39,17 @@ except Exception:
     jwt = None
     USE_JWT = False
 
-JWT_SECRET = os.getenv("SECRET_KEY", "jarvis_super_secret_jwt_key_2026_production")
+SECRET_KEY = os.getenv("SECRET_KEY", "").strip()
+if not SECRET_KEY:
+    if os.getenv("ENVIRONMENT", "development").lower() == "production":
+        raise RuntimeError("CRITICAL SECURITY ERROR: 'SECRET_KEY' environment variable MUST be set in production mode.")
+    # Safe random secret fallback for local development testing only
+    SECRET_KEY = "dev_only_random_secret_" + uuid.uuid4().hex
+
+JWT_SECRET = SECRET_KEY
 JWT_ALGORITHM = "HS256"
 JWT_EXPIRATION_SECONDS = 86400 * 7  # 7 Days token validity
+
 
 def init_users_db():
     """Initializes SQLite/PostgreSQL users table if it does not exist."""

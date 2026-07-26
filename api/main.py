@@ -42,9 +42,13 @@ app.add_middleware(
 # Global Exception Handler
 @app.exception_handler(Exception)
 async def global_exception_handler(request: Request, exc: Exception):
+    import logging
+    logging.error(f"[SERVER_ERROR] {request.method} {request.url.path}: {str(exc)}", exc_info=True)
+    is_prod = os.getenv("ENVIRONMENT", "development").lower() == "production"
+    error_detail = "Internal Server Error" if is_prod else str(exc)
     return JSONResponse(
         status_code=500,
-        content={"error": str(exc), "path": str(request.url.path)}
+        content={"error": error_detail, "path": str(request.url.path)}
     )
 
 # Include Legacy Top-Level Routes & API v1 Namespaced Routes

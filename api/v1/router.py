@@ -1,6 +1,6 @@
 """
 Purpose:
-API v1 Router Specifications for Jarvis AI OS (Sprint v4.4 Enterprise Automation Engine).
+API v1 Router Specifications for Jarvis AI OS (Sprint v4.5 Business CRM & Lead Workspace Platform).
 
 Namespaces:
 - /api/v1/chat
@@ -22,6 +22,9 @@ Namespaces:
 - /api/v1/workflows/create
 - /api/v1/workflows/execute
 - /api/v1/workflows/history
+- /api/v1/crm/leads
+- /api/v1/crm/deals
+- /api/v1/crm/ai-assist
 """
 
 from fastapi import APIRouter
@@ -52,6 +55,9 @@ from services.knowledge_timeline import knowledge_timeline
 from services.automation_engine import automation_engine
 from services.workflow_execution import workflow_execution
 from services.workflow_scheduler import workflow_scheduler
+from services.crm_engine import crm_engine
+from services.deal_pipeline import deal_pipeline
+from services.lead_ai_assistant import lead_ai_assistant
 
 v1_router = APIRouter(prefix="/v1")
 
@@ -131,3 +137,24 @@ def execute_workflow_endpoint(workflow_id: int):
 @v1_router.get("/workflows/history", tags=["v1 Automation Engine"])
 def get_workflow_history_endpoint(workspace_id: str = "default", limit: int = 30):
     return {"history": workflow_execution.get_execution_history(workspace_id, limit)}
+
+# Business CRM & Lead Platform Endpoints
+@v1_router.post("/crm/leads", tags=["v1 Business CRM"])
+def create_lead_endpoint(workspace_id: str, name: str, email: str, company: str = ""):
+    return crm_engine.create_lead(workspace_id, name, email, company)
+
+@v1_router.get("/crm/leads", tags=["v1 Business CRM"])
+def list_leads_endpoint(workspace_id: str = "default", status: str = None):
+    return {"leads": crm_engine.list_leads(workspace_id, status)}
+
+@v1_router.post("/crm/deals", tags=["v1 Business CRM"])
+def create_deal_endpoint(lead_id: int, workspace_id: str, title: str, value_usd: float):
+    return deal_pipeline.create_deal(lead_id, workspace_id, title, value_usd)
+
+@v1_router.get("/crm/deals/pipeline", tags=["v1 Business CRM"])
+def get_deal_pipeline_endpoint(workspace_id: str = "default"):
+    return {"pipeline": deal_pipeline.get_pipeline_summary(workspace_id)}
+
+@v1_router.post("/crm/ai/draft-email", tags=["v1 Business CRM"])
+def draft_sales_email_endpoint(lead_id: int, tone: str = "professional"):
+    return lead_ai_assistant.draft_followup_email(lead_id, tone)

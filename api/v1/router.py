@@ -1,6 +1,6 @@
 """
 Purpose:
-API v1 Router Specifications for Jarvis AI OS (Sprint v4.5 Business CRM & Lead Workspace Platform).
+API v1 Router Specifications for Jarvis AI OS (Sprint v4.6 Business Communication & Activity Feed Platform).
 
 Namespaces:
 - /api/v1/chat
@@ -25,6 +25,9 @@ Namespaces:
 - /api/v1/crm/leads
 - /api/v1/crm/deals
 - /api/v1/crm/ai-assist
+- /api/v1/activity-feed
+- /api/v1/team-inbox/messages
+- /api/v1/reminders
 """
 
 from fastapi import APIRouter
@@ -58,6 +61,9 @@ from services.workflow_scheduler import workflow_scheduler
 from services.crm_engine import crm_engine
 from services.deal_pipeline import deal_pipeline
 from services.lead_ai_assistant import lead_ai_assistant
+from services.activity_feed import activity_feed
+from services.team_inbox import team_inbox
+from services.calendar_reminders import calendar_reminders
 
 v1_router = APIRouter(prefix="/v1")
 
@@ -158,3 +164,24 @@ def get_deal_pipeline_endpoint(workspace_id: str = "default"):
 @v1_router.post("/crm/ai/draft-email", tags=["v1 Business CRM"])
 def draft_sales_email_endpoint(lead_id: int, tone: str = "professional"):
     return lead_ai_assistant.draft_followup_email(lead_id, tone)
+
+# Communication Hub & Activity Feed Endpoints
+@v1_router.get("/activity-feed", tags=["v1 Communication Hub"])
+def get_activity_feed_endpoint(workspace_id: str = "default", limit: int = 30):
+    return {"activity_feed": activity_feed.get_activity_feed(workspace_id, limit)}
+
+@v1_router.post("/team-inbox/messages", tags=["v1 Communication Hub"])
+def send_team_message_endpoint(workspace_id: str, channel: str, sender: str, message: str):
+    return team_inbox.send_message(workspace_id, channel, sender, message)
+
+@v1_router.get("/team-inbox/messages", tags=["v1 Communication Hub"])
+def get_team_messages_endpoint(workspace_id: str = "default", channel: str = "SALES", limit: int = 50):
+    return {"messages": team_inbox.get_channel_messages(workspace_id, channel, limit)}
+
+@v1_router.post("/reminders", tags=["v1 Communication Hub"])
+def create_reminder_endpoint(workspace_id: str, title: str, due_at: str = "", assignee: str = "me"):
+    return calendar_reminders.create_reminder(workspace_id, title, due_at, assignee)
+
+@v1_router.get("/reminders", tags=["v1 Communication Hub"])
+def list_reminders_endpoint(workspace_id: str = "default", pending_only: bool = True):
+    return {"reminders": calendar_reminders.list_reminders(workspace_id, pending_only)}

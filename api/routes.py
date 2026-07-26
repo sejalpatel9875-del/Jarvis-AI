@@ -48,6 +48,11 @@ def get_status():
         system_status="online"
     )
 
+def handle_user_request(user_message: str) -> dict:
+    """Compatibility wrapper for CLI main.py."""
+    reply, actions = brain.think(user_message)
+    return {"response": reply, "actions": actions, "status": "success"}
+
 @router.get("/health", response_model=HealthResponse, tags=["System"])
 def health_check():
     """Checks health status of AI providers and SQLite database connection."""

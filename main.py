@@ -38,13 +38,15 @@ def print_banner():
     print("-" * 60)
     print("=" * 60 + "\n")
 
+from agents.brain import JarvisBrain
+brain = JarvisBrain()
+
 def process_command(command_text: str):
-    """Processes user input using API routes & speaks the response."""
-    result = api_routes.handle_user_request(command_text)
-    response = result.get("response", "")
-    if response:
-        tts.speak(response)
-    return result
+    """Processes user input using JarvisBrain & speaks the response."""
+    reply, actions = brain.think(command_text)
+    if reply:
+        tts.speak(reply)
+    return {"response": reply, "actions": actions}
 
 def main():
     print_banner()

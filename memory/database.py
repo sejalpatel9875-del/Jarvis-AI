@@ -47,6 +47,20 @@ def init_db():
             )
         """)
         
+        # 3. Persistent Document Chunks Table
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS document_chunks (
+                id TEXT PRIMARY KEY,
+                source_file TEXT NOT NULL,
+                page_number INTEGER NOT NULL,
+                chunk_index INTEGER NOT NULL,
+                content TEXT NOT NULL,
+                metadata_json TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_source_file ON document_chunks(source_file);")
+
         # Seed default preferences
         default_prefs = {
             "language": "Hinglish",

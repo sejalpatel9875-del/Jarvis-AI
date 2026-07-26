@@ -7,11 +7,12 @@ import os
 import tempfile
 from services.document_loader import DocumentLoader, DocumentContent
 from services.chunker import SemanticChunker, TextChunk
-from providers.embedding import VectorStore, compute_cosine_similarity
+from providers.embedding import VectorStore, global_vector_store, compute_cosine_similarity
 from tools.document import DocumentTool
 
 class TestDocumentIntelligence(unittest.TestCase):
     def setUp(self):
+        global_vector_store.clear()
         # Create temporary sample text document
         self.temp_dir = tempfile.TemporaryDirectory()
         self.sample_file = os.path.join(self.temp_dir.name, "sample.txt")
@@ -19,6 +20,7 @@ class TestDocumentIntelligence(unittest.TestCase):
             f.write("Python 3.14 includes new performance optimizations and JIT compilation improvements. Page 17 details memory layout changes.")
 
     def tearDown(self):
+        global_vector_store.clear()
         self.temp_dir.cleanup()
 
     def test_document_loader(self):
@@ -43,6 +45,7 @@ class TestDocumentIntelligence(unittest.TestCase):
         chunks = chunker.chunk_document(doc)
 
         vstore = VectorStore()
+        vstore.clear()
         vstore.add_chunks(chunks)
 
         results = vstore.search("performance optimizations", top_k=1)

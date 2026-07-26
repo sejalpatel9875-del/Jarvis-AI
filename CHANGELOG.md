@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ---
 
+## [v1.6.0-alpha2] - 2026-07-26
+
+### ✨ Added
+- **Persistent SQLite Vector Store ([providers/embedding.py](file:///c:/Users/Aryan/Documents/jarvis/providers/embedding.py))**: `document_chunks` SQLite table in `memory/jarvis.db` ensuring document index survives application restarts.
+- **Multi-Document Indexing & Metadata Filtering**: Filter knowledge base queries by `source_file` or `file_type`.
+- **Retrieval Quality Unit Test Suite ([tests/test_retrieval.py](file:///c:/Users/Aryan/Documents/jarvis/tests/test_retrieval.py))**: Verified DB restart survival, multi-document search, and metadata filtering.
+- **Vector Benchmark Expansion ([scripts/benchmark.py](file:///c:/Users/Aryan/Documents/jarvis/scripts/benchmark.py))**: Added chunking speed (`chunks/sec`), vector indexing latency, and similarity search benchmarks.
+
+---
+
 ## [v1.6.0-alpha1] - 2026-07-25
 
 ### ✨ Added

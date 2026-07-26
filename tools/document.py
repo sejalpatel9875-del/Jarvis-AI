@@ -1,11 +1,10 @@
 """
 Purpose:
-Document Intelligence & RAG Tool for Jarvis.
+Document Intelligence & Persistent RAG Tool for Jarvis.
 
 Responsibilities:
-- Index document files (.pdf, .docx, .txt, .csv) into VectorStore
-- Search indexed document chunks with page citations
-- Provide full document summaries
+- Persistently index document files (.pdf, .docx, .txt, .csv) into SQLite VectorStore
+- Search multi-document knowledge base with metadata filtering & page citations
 
 Dependencies:
 - tools/base.py
@@ -33,34 +32,40 @@ class DocumentTool(BaseTool):
 
     @property
     def description(self) -> str:
-        return "Indexes, searches, and summarizes document files (.pdf, .docx, .txt) with page citations."
+        return "Persistently indexes, searches, and summarizes documents (.pdf, .docx, .txt) with page citations."
 
     def execute(self, action: str = "query", filepath: str = "", query: str = "", **kwargs) -> ToolResult:
         act = action.lower().strip()
         target_path = filepath or kwargs.get("filepath", "") or kwargs.get("path", "")
         search_query = query or kwargs.get("query", "")
+        filter_source = kwargs.get("filter_source") or kwargs.get("source_file")
+        filter_type = kwargs.get("filter_type") or kwargs.get("file_type")
 
-        # Action 1: Index Document
+        # Action 1: Persistent Multi-Document Indexing
         if act == "index" or (target_path and not search_query):
             if not target_path or not os.path.exists(target_path):
                 return ToolResult(success=False, result=f"Document path '{target_path}' not found.")
 
             doc = DocumentLoader.load_document(target_path)
             chunks = self.chunker.chunk_document(doc)
-            global_vector_store.clear()
-            global_vector_store.add_chunks(chunks)
+            global_vector_store.add_chunks(chunks, replace_existing=True)
 
             return ToolResult(
                 success=True,
-                result=f"Successfully indexed document '{doc.file_name}' ({doc.total_pages} pages, {len(chunks)} chunks)."
+                result=f"Successfully indexed document '{doc.file_name}' persistently into SQLite ({doc.total_pages} pages, {len(chunks)} chunks)."
             )
 
-        # Action 2: Query Document Knowledge Base
+        # Action 2: Multi-Document Knowledge Base Search
         elif act == "query" or search_query:
             if not search_query:
                 return ToolResult(success=False, result="No query string provided for document search.")
 
-            results = global_vector_store.search(search_query, top_k=3)
+            results = global_vector_store.search(
+                search_query,
+                top_k=3,
+                filter_source=filter_source,
+                filter_type=filter_type
+            )
             if not results:
                 return ToolResult(success=False, result=f"No matching content found for '{search_query}'.")
 

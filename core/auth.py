@@ -3,9 +3,10 @@ Purpose:
 Multi-Tenant User Account & Authentication Engine for Jarvis AI OS.
 
 Responsibilities:
-- SQLite/PostgreSQL 'users' table schema management
+- SQLite/PostgreSQL 'users' & 'revoked_tokens' table schema management
 - Production-grade password hashing with Bcrypt
 - Signed JWT Session Token generation & verification
+- Short-Lived Access Token & Long-Lived Refresh Token rotation
 """
 
 import os
@@ -47,21 +48,48 @@ if IS_PROD and not USE_JWT:
 
 JWT_SECRET = SECRET_KEY
 JWT_ALGORITHM = "HS256"
-JWT_EXPIRATION_SECONDS = 86400 * 7  # 7 Days token validity
+ACCESS_TOKEN_EXPIRATION = 86400  # 24 Hours
+REFRESH_TOKEN_EXPIRATION = 86400 * 30  # 30 Days
 
 def init_users_db():
     with db.get_connection() as conn:
-        conn.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id TEXT PRIMARY KEY,
-                email TEXT UNIQUE NOT NULL,
-                user_name TEXT NOT NULL,
-                password_hash TEXT NOT NULL,
-                salt TEXT NOT NULL,
-                role TEXT DEFAULT 'user',
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        """)
+        cursor = conn.cursor()
+        if db.USE_POSTGRES:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id VARCHAR(64) PRIMARY KEY,
+                    email VARCHAR(255) UNIQUE NOT NULL,
+                    user_name VARCHAR(128) NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    salt VARCHAR(64) NOT NULL,
+                    role VARCHAR(32) DEFAULT 'user',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS revoked_tokens (
+                    jti VARCHAR(128) PRIMARY KEY,
+                    revoked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                );
+            """)
+        else:
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS users (
+                    id TEXT PRIMARY KEY,
+                    email TEXT UNIQUE NOT NULL,
+                    user_name TEXT NOT NULL,
+                    password_hash TEXT NOT NULL,
+                    salt TEXT NOT NULL,
+                    role TEXT DEFAULT 'user',
+                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS revoked_tokens (
+                    jti TEXT PRIMARY KEY,
+                    revoked_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+                )
+            """)
 
 init_users_db()
 
@@ -115,6 +143,42 @@ class AuthService:
             return {"success": False, "error": err_msg}
 
     @classmethod
+    def create_tokens(cls, user_id: str, email: str, role: str) -> Dict[str, str]:
+        now = int(time.time())
+        jti = uuid.uuid4().hex
+
+        access_payload = {
+            "sub": user_id,
+            "email": email,
+            "role": role,
+            "type": "access",
+            "jti": jti,
+            "exp": now + ACCESS_TOKEN_EXPIRATION
+        }
+
+        refresh_payload = {
+            "sub": user_id,
+            "email": email,
+            "type": "refresh",
+            "jti": jti,
+            "exp": now + REFRESH_TOKEN_EXPIRATION
+        }
+
+        if USE_JWT and jwt:
+            access_token = jwt.encode(access_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+            refresh_token = jwt.encode(refresh_payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
+        else:
+            access_token = f"jarvis_access_{user_id}_{uuid.uuid4().hex[:16]}"
+            refresh_token = f"jarvis_refresh_{user_id}_{uuid.uuid4().hex[:16]}"
+
+        return {
+            "access_token": access_token,
+            "refresh_token": refresh_token,
+            "token_type": "bearer",
+            "expires_in": ACCESS_TOKEN_EXPIRATION
+        }
+
+    @classmethod
     def login_user(cls, email: str, password: str) -> Dict[str, Any]:
         clean_email = email.strip().lower()
         try:
@@ -131,25 +195,27 @@ class AuthService:
             if not cls.verify_password(password, stored_hash, salt):
                 return {"success": False, "error": "Invalid email or password."}
 
-            payload = {
-                "sub": user_id,
-                "email": clean_email,
-                "role": role,
-                "exp": int(time.time()) + JWT_EXPIRATION_SECONDS
-            }
-
-            if USE_JWT and jwt:
-                token = jwt.encode(payload, JWT_SECRET, algorithm=JWT_ALGORITHM)
-            else:
-                token = f"jarvis_jwt_{user_id}_{uuid.uuid4().hex[:16]}"
-
+            token_data = cls.create_tokens(user_id, clean_email, role)
             logger.info("AUTH_SERVICE", f"User '{clean_email}' authenticated successfully.")
             return {
                 "success": True,
-                "token": token,
+                "token": token_data["access_token"],
+                "refresh_token": token_data["refresh_token"],
                 "user": {"id": user_id, "email": clean_email, "user_name": user_name, "role": role}
             }
         except Exception as e:
             return {"success": False, "error": str(e)}
+
+    @classmethod
+    def revoke_token(cls, jti: str) -> bool:
+        """Revokes a JWT token by jti identifier."""
+        try:
+            with db.get_connection() as conn:
+                cursor = conn.cursor()
+                sql = db.adapt_query("INSERT INTO revoked_tokens (jti) VALUES (?)")
+                cursor.execute(sql, (jti,))
+            return True
+        except Exception:
+            return False
 
 auth_service = AuthService()

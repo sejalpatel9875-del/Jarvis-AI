@@ -218,4 +218,41 @@ class AuthService:
         except Exception:
             return False
 
+    @classmethod
+    def is_token_revoked(cls, jti: str) -> bool:
+        """Checks if a token JTI has been revoked."""
+        if not jti:
+            return False
+        try:
+            with db.get_connection() as conn:
+                cursor = conn.cursor()
+                sql = db.adapt_query("SELECT jti FROM revoked_tokens WHERE jti = ?")
+                cursor.execute(sql, (jti,))
+                return cursor.fetchone() is not None
+        except Exception:
+            return False
+
+    @classmethod
+    def verify_token(cls, token: str) -> Dict[str, Any]:
+        """Verifies JWT token signature, expiration, and checks revocation table."""
+        if not token:
+            return {"valid": False, "error": "Token is missing."}
+
+        if USE_JWT and jwt:
+            try:
+                payload = jwt.decode(token, JWT_SECRET, algorithms=[JWT_ALGORITHM])
+                jti = payload.get("jti")
+                if jti and cls.is_token_revoked(jti):
+                    return {"valid": False, "error": "Token has been revoked."}
+                return {"valid": True, "payload": payload}
+            except jwt.ExpiredSignatureError:
+                return {"valid": False, "error": "Token has expired."}
+            except jwt.InvalidTokenError as e:
+                return {"valid": False, "error": f"Invalid token: {str(e)}"}
+        else:
+            if token.startswith("jarvis_access_") or token.startswith("jarvis_jwt_"):
+                return {"valid": True, "payload": {"sub": "dev_user"}}
+            return {"valid": False, "error": "Invalid dev token."}
+
 auth_service = AuthService()
+

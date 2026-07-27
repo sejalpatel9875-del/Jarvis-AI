@@ -20,4 +20,3 @@ redis
 
 # Cloud Text-to-Speech Engine
 edge-tts
-SpeechRecognition

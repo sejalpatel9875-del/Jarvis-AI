@@ -55,14 +55,14 @@ async def global_exception_handler(request: Request, exc: Exception):
 app.include_router(router)
 app.include_router(v1_router, prefix="/api")
 
-# Mount Static Files & Serve Web Dashboard UI at http://127.0.0.1:8000/
-static_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "static")
-if os.path.exists(static_dir):
-    app.mount("/static", StaticFiles(directory=static_dir), name="static")
+# Mount Static Files & Serve Commercial Web App UI at http://127.0.0.1:8000/
+web_dir = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "web")
+if os.path.exists(web_dir):
+    app.mount("/web", StaticFiles(directory=web_dir), name="web")
 
     @app.get("/", include_in_schema=False)
     def serve_dashboard():
-        return FileResponse(os.path.join(static_dir, "index.html"))
+        return FileResponse(os.path.join(web_dir, "index.html"))
 
 if __name__ == "__main__":
     import uvicorn

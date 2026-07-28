@@ -147,7 +147,7 @@ class GlowingOrbWidget(QWidget):
         pen_inner = QPen(core_color, 1, Qt.PenStyle.DashLine)
         painter.setPen(pen_inner)
         r_inner = int(r_pulsed * 0.75)
-        painter.drawArc(center_x - r_inner, center_y - r_inner, r_inner * 2, r_inner * 2, (-self.angle * 1.5) * 16, 280 * 16)
+        painter.drawArc(center_x - r_inner, center_y - r_inner, r_inner * 2, r_inner * 2, int((-self.angle * 1.5) * 16), 280 * 16)
 
         # Draw core solid glowing center node
         radial_core = QRadialGradient(center_x, center_y, r_pulsed * 0.4)

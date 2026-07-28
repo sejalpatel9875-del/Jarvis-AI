@@ -516,8 +516,16 @@ def route_automation(command: str) -> str:
     if any(kw in cmd for kw in ["sleep", "hibernate"]):
         return sleep_pc()
     
-    if any(kw in cmd for kw in ["log off", "logoff", "sign out"]):
-        return logoff_pc()
+    # --- 10.5 Run Command execution ---
+    if cmd.startswith("run command ") or cmd.startswith("execute command ") or cmd.startswith("run "):
+        target = command.strip().replace("run command ", "", 1).replace("execute command ", "", 1).replace("run ", "", 1).strip()
+        if target:
+            import subprocess
+            try:
+                subprocess.Popen(target, shell=True)
+                return f"Running command '{target}' successfully, Boss."
+            except Exception as e:
+                return f"Failed to run command '{target}': {e}"
 
     return None
 

@@ -133,13 +133,13 @@ def listen(timeout=8, phrase_time_limit=12, calibration_duration=0.4, engine="go
         else:
             ambient_rms = np.sqrt(np.mean(audio_flat**2))
         
-        # Sensitive threshold: 1.25x ambient noise floor + 15 offset (low floor of 45 for soft speech)
-        threshold = max(ambient_rms * 1.25 + 15.0, 45.0)
+        # Double-hardened noise threshold for int16 PCM (baseline minimum of 180 to block line static/transients)
+        threshold = max(ambient_rms * 1.5 + 40.0, 180.0)
         print(f"[STT] Noise Floor: {ambient_rms:.0f} | Dynamic Threshold: {threshold:.0f}")
         
     except Exception as e:
         print(f"[STT Warning] Calibration failed: {e}")
-        threshold = 60.0
+        threshold = 200.0
 
     print("[STT] 🎤 Listening...")
     
@@ -155,7 +155,7 @@ def listen(timeout=8, phrase_time_limit=12, calibration_duration=0.4, engine="go
     pre_buffer = deque(maxlen=pre_buffer_size)
     
     SILENCE_TO_STOP = 0.9  # Stops recording 0.9s after user finishes speaking
-    MIN_SPEECH_CHUNKS = 2
+    MIN_SPEECH_CHUNKS = 3
     
     try:
         with sd.InputStream(samplerate=samplerate, channels=channels, dtype='int16', blocksize=chunk_size) as stream:

@@ -72,6 +72,25 @@ class StepExecutor:
         # 2. Tool Resolution
         resolved_tool = self.resolve_tool_name(step)
         if not resolved_tool:
+            # Special-case "llm_general" capability to execute using the LLM ask_ai directly!
+            if step.capability.strip().lower() == "llm_general":
+                from services.llm_router import ask_ai
+                step.status = StepStatus.RUNNING
+                step.log_event("STARTED", f"Executing general LLM reasoning prompt: {step.args}")
+                try:
+                    prompt = step.args.get("prompt", "")
+                    response = ask_ai(prompt)
+                    step.status = StepStatus.SUCCESS
+                    step.result = response
+                    step.log_event("COMPLETED", "LLM reasoning successfully completed.")
+                    return ToolResult(success=True, result=response)
+                except Exception as e:
+                    msg = f"LLM general execution error: {e}"
+                    step.status = StepStatus.FAILED
+                    step.error = msg
+                    step.log_event("FAILED", msg)
+                    return ToolResult(success=False, result=msg)
+
             msg = f"No registered tool found for capability '{step.capability}' or name '{step.tool_name}'."
             step.status = StepStatus.FAILED
             step.error = msg

@@ -167,16 +167,30 @@ class JarvisCore(QObject):
         """Callback when background thread detects the wake word."""
         print(f"[Core] Wake word triggered! Spoken trail: '{command}'")
         
-        # Acknowledge the user
-        tts.speak("Yes Boss?")
+        # Stop background listening immediately to free the audio input device and prevent self-activation
+        self.stop_all_active_workers(stop_wake=True)
         
-        if command:
-            # Process command directly if user spoke it right after the wake word
-            self.ui.append_chat("Boss", command)
-            self.handle_command(command)
-        else:
-            # Go directly into active microphone capture mode
-            self.trigger_mic_listening()
+        # Run wake acknowledgment in a separate worker QThread so it doesn't freeze the GUI
+        class AcknowledgeWorker(QThread):
+            finished = pyqtSignal()
+            def run(self):
+                try:
+                    tts.speak("Yes Boss?")
+                except Exception as e:
+                    print(f"[Wake Acknowledge Error] {e}")
+                self.finished.emit()
+                
+        self.ack_worker = AcknowledgeWorker()
+        
+        def on_ack_finished():
+            if command:
+                self.ui.append_chat("Boss", command)
+                self.handle_command(command)
+            else:
+                self.trigger_mic_listening()
+                
+        self.ack_worker.finished.connect(on_ack_finished)
+        self.ack_worker.start()
 
     def trigger_mic_listening(self):
         """Triggered via Mic UI button or wake word. Stops wake word loop and listens for a command."""

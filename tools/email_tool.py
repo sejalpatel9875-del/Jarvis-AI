@@ -28,3 +28,14 @@ class EmailTool(BaseTool):
             success=True,
             result=f"Successfully dispatched email to '{to_email}' with subject '{sub}'."
         )
+
+    def validate(self, result: ToolResult) -> bool:
+        return result.success and "Successfully dispatched" in result.result
+
+    def rollback(self, **kwargs) -> ToolResult:
+        # Mock email rollback (recalling/logging recall event)
+        recipient = kwargs.get("recipient", "user@example.com")
+        return ToolResult(success=True, result=f"Successfully recalled/logged cancellation of email sent to '{recipient}'.")
+
+    def status(self) -> str:
+        return "ACTIVE"

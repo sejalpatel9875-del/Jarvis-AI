@@ -44,3 +44,15 @@ class BaseTool(ABC):
     def execute(self, **kwargs) -> ToolResult:
         """Executes the tool with keyword arguments."""
         pass
+
+    def validate(self, result: ToolResult) -> bool:
+        """Validates the execution results of this tool."""
+        return result.success
+
+    def rollback(self, **kwargs) -> ToolResult:
+        """Compensates/rolls back side-effects of this tool execution."""
+        return ToolResult(success=True, result=f"No rollback required for '{self.name}'.")
+
+    def status(self) -> str:
+        """Returns the current operational status of the tool."""
+        return "ACTIVE"

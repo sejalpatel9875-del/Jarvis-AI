@@ -65,7 +65,7 @@ class WorkspaceModel:
 
 
 def init_workspaces_db() -> None:
-    """Initializes SQLite organizations and workspaces tables if they do not exist."""
+    """Initializes SQLite organizations, workspaces, teams, and team members tables."""
     with db.get_connection() as conn:
         conn.execute("""
             CREATE TABLE IF NOT EXISTS organizations (
@@ -84,6 +84,25 @@ def init_workspaces_db() -> None:
                 department TEXT DEFAULT 'General',
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                 FOREIGN KEY (org_id) REFERENCES organizations(id) ON DELETE CASCADE
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS teams (
+                id TEXT PRIMARY KEY,
+                workspace_id TEXT NOT NULL,
+                name TEXT NOT NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON DELETE CASCADE
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS team_members (
+                team_id TEXT NOT NULL,
+                user_id TEXT NOT NULL,
+                role TEXT DEFAULT 'employee',
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                PRIMARY KEY (team_id, user_id),
+                FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
             )
         """)
 
@@ -271,6 +290,52 @@ class WorkspaceManager:
                 "WORKSPACE_MANAGER",
                 f"Failed to list workspaces for org '{org_id}': {str(e)}",
             )
+            return []
+
+    def create_team(self, workspace_id: str, name: str) -> Dict[str, Any]:
+        """Creates a new team inside a workspace."""
+        clean_name = name.strip()
+        if not clean_name:
+            return {"success": False, "error": "Team name cannot be empty."}
+        team_id = f"team_{uuid.uuid4().hex[:8]}"
+        created_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            with db.get_connection() as conn:
+                conn.execute(
+                    "INSERT INTO teams (id, workspace_id, name, created_at) VALUES (?, ?, ?, ?)",
+                    (team_id, workspace_id, clean_name, created_at)
+                )
+            logger.info("WORKSPACE_MANAGER", f"Created team '{clean_name}' (ID: {team_id}) in Workspace '{workspace_id}'")
+            return {"success": True, "team": {"id": team_id, "workspace_id": workspace_id, "name": clean_name, "created_at": created_at}}
+        except Exception as e:
+            logger.error("WORKSPACE_MANAGER", f"Failed to create team '{clean_name}': {str(e)}")
+            return {"success": False, "error": str(e)}
+
+    def add_team_member(self, team_id: str, user_id: str, role: str = "employee") -> Dict[str, Any]:
+        """Adds/invites a user to a team."""
+        created_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        try:
+            with db.get_connection() as conn:
+                conn.execute(
+                    "INSERT INTO team_members (team_id, user_id, role, created_at) VALUES (?, ?, ?, ?)",
+                    (team_id, user_id, role, created_at)
+                )
+            logger.info("WORKSPACE_MANAGER", f"Added user '{user_id}' to team '{team_id}' with role '{role}'")
+            return {"success": True, "member": {"team_id": team_id, "user_id": user_id, "role": role}}
+        except Exception as e:
+            logger.error("WORKSPACE_MANAGER", f"Failed to add member to team '{team_id}': {str(e)}")
+            return {"success": False, "error": str(e)}
+
+    def list_teams(self, workspace_id: str) -> List[Dict[str, Any]]:
+        """Lists all teams under a workspace."""
+        try:
+            with db.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id, workspace_id, name, created_at FROM teams WHERE workspace_id = ?", (workspace_id,))
+                rows = cursor.fetchall()
+            return [{"id": r["id"], "workspace_id": r["workspace_id"], "name": r["name"], "created_at": str(r["created_at"])} for r in rows]
+        except Exception as e:
+            logger.error("WORKSPACE_MANAGER", f"Failed to list teams for workspace '{workspace_id}': {str(e)}")
             return []
 
 

@@ -12,6 +12,7 @@ Responsibilities:
 import os
 import sqlite3
 import datetime
+import re
 from contextlib import contextmanager
 
 DATABASE_URL = os.getenv("DATABASE_URL", "").strip()
@@ -31,7 +32,136 @@ if IS_POSTGRES:
 else:
     USE_POSTGRES = False
 
-DB_PATH = os.path.join(os.path.dirname(os.path.abspath(__file__)), "jarvis.db")
+# Vercel Functions have a read-only deployed filesystem.  Their only writable
+# location is /tmp, which is intentionally ephemeral between invocations.
+DB_PATH = (
+    "/tmp/jarvis.db"
+    if os.getenv("VERCEL")
+    else os.path.join(os.path.dirname(os.path.abspath(__file__)), "jarvis.db")
+)
+
+class CursorProxy:
+    def __init__(self, cursor):
+        self._cursor = cursor
+        self._lastrowid = None
+
+    def __getattr__(self, name):
+        return getattr(self._cursor, name)
+
+    @property
+    def lastrowid(self):
+        return self._lastrowid
+
+    def execute(self, query, params=None):
+        adapted_query = query.replace("?", "%s")
+        lower_query = adapted_query.lower()
+        
+        if "insert or replace" in lower_query:
+            if "preferences" in lower_query:
+                adapted_query = re.sub(
+                    r'insert\s+or\s+replace\s+into\s+preferences\s*\((.*?)\)\s*values\s*\((.*?)\)',
+                    r'INSERT INTO preferences (\1) VALUES (\2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+                    adapted_query,
+                    flags=re.IGNORECASE
+                )
+            elif "document_chunks" in lower_query:
+                adapted_query = re.sub(
+                    r'insert\s+or\s+replace\s+into\s+document_chunks',
+                    r'INSERT INTO document_chunks',
+                    adapted_query,
+                    flags=re.IGNORECASE
+                )
+                if "on conflict" not in adapted_query.lower():
+                    adapted_query += " ON CONFLICT (id) DO UPDATE SET source_file = EXCLUDED.source_file, page_number = EXCLUDED.page_number, chunk_index = EXCLUDED.chunk_index, content = EXCLUDED.content, metadata_json = EXCLUDED.metadata_json, created_at = EXCLUDED.created_at"
+
+        is_insert = query.strip().lower().startswith("insert")
+        if is_insert and "returning id" not in adapted_query.lower():
+            clean_query = adapted_query.strip()
+            if clean_query.endswith(";"):
+                clean_query = clean_query[:-1].strip()
+            adapted_query = f"{clean_query} RETURNING id"
+
+        self._cursor.execute(adapted_query, params or ())
+        
+        if is_insert:
+            try:
+                row = self._cursor.fetchone()
+                if row:
+                    if isinstance(row, dict):
+                        self._lastrowid = row.get("id")
+                    elif isinstance(row, tuple) or isinstance(row, list):
+                        self._lastrowid = row[0]
+                    else:
+                        self._lastrowid = getattr(row, "id", None)
+            except Exception:
+                self._lastrowid = None
+
+    def executemany(self, query, seq_of_params):
+        adapted_query = query.replace("?", "%s")
+        return self._cursor.executemany(adapted_query, seq_of_params)
+
+
+class ConnectionProxy:
+    def __init__(self, conn):
+        self._conn = conn
+
+    def __getattr__(self, name):
+        return getattr(self._conn, name)
+
+    def execute(self, query, params=None):
+        import psycopg2.extras
+        adapted_query = query.replace("?", "%s")
+        lower_query = adapted_query.lower()
+        
+        if "insert or replace" in lower_query:
+            if "preferences" in lower_query:
+                adapted_query = re.sub(
+                    r'insert\s+or\s+replace\s+into\s+preferences\s*\((.*?)\)\s*values\s*\((.*?)\)',
+                    r'INSERT INTO preferences (\1) VALUES (\2) ON CONFLICT (key) DO UPDATE SET value = EXCLUDED.value',
+                    adapted_query,
+                    flags=re.IGNORECASE
+                )
+            elif "document_chunks" in lower_query:
+                adapted_query = re.sub(
+                    r'insert\s+or\s+replace\s+into\s+document_chunks',
+                    r'INSERT INTO document_chunks',
+                    adapted_query,
+                    flags=re.IGNORECASE
+                )
+                if "on conflict" not in adapted_query.lower():
+                    adapted_query += " ON CONFLICT (id) DO UPDATE SET source_file = EXCLUDED.source_file, page_number = EXCLUDED.page_number, chunk_index = EXCLUDED.chunk_index, content = EXCLUDED.content, metadata_json = EXCLUDED.metadata_json, created_at = EXCLUDED.created_at"
+
+        cursor = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        is_insert = query.strip().lower().startswith("insert")
+        if is_insert and "returning id" not in adapted_query.lower():
+            clean_query = adapted_query.strip()
+            if clean_query.endswith(";"):
+                clean_query = clean_query[:-1].strip()
+            adapted_query = f"{clean_query} RETURNING id"
+
+        cursor.execute(adapted_query, params or ())
+        
+        proxy = CursorProxy(cursor)
+        if is_insert:
+            try:
+                row = cursor.fetchone()
+                if row:
+                    if isinstance(row, dict):
+                        proxy._lastrowid = row.get("id")
+                    elif isinstance(row, tuple) or isinstance(row, list):
+                        proxy._lastrowid = row[0]
+                    else:
+                        proxy._lastrowid = getattr(row, "id", None)
+            except Exception:
+                proxy._lastrowid = None
+        return proxy
+
+    def cursor(self):
+        import psycopg2.extras
+        cursor = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        return CursorProxy(cursor)
+
 
 @contextmanager
 def get_connection():
@@ -39,7 +169,7 @@ def get_connection():
     if USE_POSTGRES and _pg_pool:
         conn = _pg_pool.getconn()
         try:
-            yield conn
+            yield ConnectionProxy(conn)
             conn.commit()
         except Exception:
             conn.rollback()

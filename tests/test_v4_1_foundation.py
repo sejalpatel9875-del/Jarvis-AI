@@ -3,6 +3,12 @@ Unit tests for Sprint v4.1 Production Foundation.
 """
 
 import unittest
+import os
+
+# Set testing environment before loading the application
+os.environ["TESTING"] = "true"
+os.environ["ENVIRONMENT"] = "testing"
+
 from core.config import settings
 from services.redis_cache import redis_cache
 from fastapi.testclient import TestClient

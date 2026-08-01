@@ -4,6 +4,12 @@ Automated unit tests for FastAPI REST API endpoints (/health, /status, /metrics,
 
 import unittest
 import io
+import os
+
+# Set testing environment before loading the application
+os.environ["TESTING"] = "true"
+os.environ["ENVIRONMENT"] = "testing"
+
 from fastapi.testclient import TestClient
 from api.main import app
 from providers.embedding import global_vector_store

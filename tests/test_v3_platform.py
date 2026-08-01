@@ -33,9 +33,15 @@ class TestV3Platform(unittest.TestCase):
 
     def test_voice_pipeline_transcribe(self):
         """Verify VoicePipelineService STT transcription."""
-        text = voice_pipeline.transcribe_audio(b"fake_audio_bytes")
-        self.assertIsInstance(text, str)
-        self.assertTrue(len(text) > 0)
+        from unittest.mock import patch, MagicMock
+        with patch("requests.post") as mock_post:
+            mock_response = MagicMock()
+            mock_response.ok = True
+            mock_response.json.return_value = {"text": "hello jarvis"}
+            mock_post.return_value = mock_response
+            
+            text = voice_pipeline.transcribe_audio(b"fake_audio_bytes")
+            self.assertEqual(text, "hello jarvis")
 
     def test_v3_real_world_tools_registration(self):
         """Verify GitHubTool, EmailTool, and FileTool execute properly."""

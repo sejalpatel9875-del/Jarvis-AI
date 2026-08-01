@@ -228,6 +228,67 @@ def init_db():
                 );
             """)
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_source_file ON document_chunks(source_file);")
+            
+            # Upgraded Memory Tables (Postgres)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS conversation_memory (
+                    id SERIAL PRIMARY KEY,
+                    timestamp VARCHAR(64) NOT NULL,
+                    user_message TEXT NOT NULL,
+                    assistant_reply TEXT NOT NULL,
+                    keywords TEXT NOT NULL,
+                    provider VARCHAR(64) NOT NULL
+                );
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS user_preferences_memory (
+                    id SERIAL PRIMARY KEY,
+                    timestamp VARCHAR(64) NOT NULL,
+                    key VARCHAR(128) UNIQUE NOT NULL,
+                    value TEXT NOT NULL,
+                    category VARCHAR(64) DEFAULT 'general'
+                );
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS task_memory (
+                    id SERIAL PRIMARY KEY,
+                    timestamp VARCHAR(64) NOT NULL,
+                    task_id VARCHAR(128) NOT NULL,
+                    goal TEXT NOT NULL,
+                    steps_json TEXT NOT NULL,
+                    status VARCHAR(64) NOT NULL,
+                    current_step INTEGER DEFAULT 0
+                );
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS knowledge_memory (
+                    id SERIAL PRIMARY KEY,
+                    timestamp VARCHAR(64) NOT NULL,
+                    chunk_id VARCHAR(128) UNIQUE NOT NULL,
+                    source VARCHAR(255) NOT NULL,
+                    content TEXT NOT NULL,
+                    keywords TEXT NOT NULL
+                );
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS session_memory (
+                    id SERIAL PRIMARY KEY,
+                    timestamp VARCHAR(64) NOT NULL,
+                    session_id VARCHAR(128) NOT NULL,
+                    key VARCHAR(128) NOT NULL,
+                    value TEXT NOT NULL,
+                    UNIQUE(session_id, key)
+                );
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS long_term_memory (
+                    id SERIAL PRIMARY KEY,
+                    timestamp VARCHAR(64) NOT NULL,
+                    key VARCHAR(128) UNIQUE NOT NULL,
+                    abstract_summary TEXT NOT NULL,
+                    keywords TEXT NOT NULL
+                );
+            """)
         else:
             cursor.execute("""
                 CREATE TABLE IF NOT EXISTS conversations (
@@ -258,6 +319,67 @@ def init_db():
                 )
             """)
             cursor.execute("CREATE INDEX IF NOT EXISTS idx_source_file ON document_chunks(source_file);")
+
+            # Upgraded Memory Tables (SQLite)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS conversation_memory (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    user_message TEXT NOT NULL,
+                    assistant_reply TEXT NOT NULL,
+                    keywords TEXT NOT NULL,
+                    provider TEXT NOT NULL
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS user_preferences_memory (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    key TEXT UNIQUE NOT NULL,
+                    value TEXT NOT NULL,
+                    category TEXT DEFAULT 'general'
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS task_memory (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    task_id TEXT NOT NULL,
+                    goal TEXT NOT NULL,
+                    steps_json TEXT NOT NULL,
+                    status TEXT NOT NULL,
+                    current_step INTEGER DEFAULT 0
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS knowledge_memory (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    chunk_id TEXT UNIQUE NOT NULL,
+                    source TEXT NOT NULL,
+                    content TEXT NOT NULL,
+                    keywords TEXT NOT NULL
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS session_memory (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    session_id TEXT NOT NULL,
+                    key TEXT NOT NULL,
+                    value TEXT NOT NULL,
+                    UNIQUE(session_id, key)
+                )
+            """)
+            cursor.execute("""
+                CREATE TABLE IF NOT EXISTS long_term_memory (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    timestamp TEXT NOT NULL,
+                    key TEXT UNIQUE NOT NULL,
+                    abstract_summary TEXT NOT NULL,
+                    keywords TEXT NOT NULL
+                )
+            """)
 
             default_prefs = {
                 "language": "Hinglish",

@@ -19,3 +19,4 @@ import tools.weather_tool
 import tools.maps
 import tools.whatsapp
 import tools.terminal_tool
+import tools.notes_tool

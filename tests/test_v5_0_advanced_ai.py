@@ -8,9 +8,10 @@ class TestV50AdvancedAI(unittest.TestCase):
     """Comprehensively tests all advanced AI capabilities in the AdvancedAIEngine."""
 
     def test_plan_and_reason(self):
-        res = advanced_ai.plan_and_reason("Index document and notify default client.")
+        goal = "Send a notification that task planning test is successful"
+        res = advanced_ai.plan_and_reason(goal)
         self.assertTrue(res["success"])
-        self.assertEqual(res["goal"], "Index document and notify default client.")
+        self.assertEqual(res["goal"], goal)
         self.assertIn("status", res)
 
     def test_analyze_document(self):

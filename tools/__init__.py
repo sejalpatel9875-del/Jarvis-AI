@@ -12,3 +12,10 @@ import tools.vision
 import tools.github_tool
 import tools.email_tool
 import tools.file_tool
+import tools.calendar_tool
+import tools.ocr_tool
+import tools.pdf_tool
+import tools.weather_tool
+import tools.maps
+import tools.whatsapp
+import tools.terminal_tool

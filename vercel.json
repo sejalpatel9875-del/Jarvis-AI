@@ -1,0 +1,12 @@
+{
+  "rewrites": [
+    {
+      "source": "/auth/:path*",
+      "destination": "https://jarvis-ai-production-eb13.up.railway.app/auth/:path*"
+    },
+    {
+      "source": "/api/:path*",
+      "destination": "https://jarvis-ai-production-eb13.up.railway.app/api/:path*"
+    }
+  ]
+}

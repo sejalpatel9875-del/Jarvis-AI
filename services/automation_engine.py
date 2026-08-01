@@ -38,6 +38,28 @@ def init_automation_db():
                 created_at TEXT NOT NULL
             )
         """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS automation_tasks (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                workspace_id TEXT NOT NULL,
+                goal TEXT NOT NULL,
+                current_step_index INTEGER DEFAULT 0,
+                status TEXT NOT NULL,
+                steps_json TEXT NOT NULL,
+                context_json TEXT NOT NULL,
+                error_message TEXT DEFAULT '',
+                created_at TEXT NOT NULL,
+                updated_at TEXT NOT NULL
+            )
+        """)
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS user_notes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                content TEXT NOT NULL,
+                created_at TEXT NOT NULL
+            )
+        """)
 
 init_automation_db()
 

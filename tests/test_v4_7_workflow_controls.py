@@ -134,8 +134,8 @@ class TestV47WorkflowControls(unittest.TestCase):
         # Trigger rollback
         rollback_res = workflow_execution.rollback_workflow(task_id)
         self.assertTrue(rollback_res["success"])
-        self.assertIn("Deleted file", rollback_res["rolled_back"][0])
-        self.assertIn("Deleted user note", rollback_res["rolled_back"][1])
+        self.assertIn("Deleted user note", rollback_res["rolled_back"][0])
+        self.assertIn("Deleted file", rollback_res["rolled_back"][1])
 
         # Verify resources are deleted
         self.assertFalse(os.path.exists(temp_file))

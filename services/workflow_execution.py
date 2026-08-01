@@ -382,6 +382,29 @@ class WorkflowExecutionEngine:
         workspace_id = task["workspace_id"]
         goal = task["goal"]
 
+        if task["status"] == "CANCELLED":
+            return {
+                "success": False,
+                "execution_id": task_id,
+                "workflow_id": task_id,
+                "status": "CANCELLED",
+                "progress": f"{round((start_idx / len(steps)) * 100, 1)}%",
+                "current_step_index": start_idx,
+                "results": context,
+                "error_message": "Task execution was cancelled."
+            }
+        if task["status"] == "PAUSED":
+            return {
+                "success": True,
+                "execution_id": task_id,
+                "workflow_id": task_id,
+                "status": "PAUSED",
+                "progress": f"{round((start_idx / len(steps)) * 100, 1)}%",
+                "current_step_index": start_idx,
+                "results": context,
+                "error_message": "Task execution is paused."
+            }
+
         if len(steps) > 50:
             err_msg = "Plan rejected: exceeds safety execution limit (50 steps) to prevent infinite loops."
             logger.error("LIMIT_ERROR", err_msg)

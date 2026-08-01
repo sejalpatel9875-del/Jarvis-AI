@@ -317,11 +317,13 @@ class WorkflowExecutionEngine:
         workspace_id = payload.get("workspace_id") or (wf["workspace_id"] if wf else "default")
         ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
-        # Check for state resumption
-        with db.get_connection() as conn:
-            cursor = conn.cursor()
-            cursor.execute("SELECT id FROM automation_tasks WHERE workspace_id = ? AND goal = ? AND status IN ('FAILED', 'PAUSED')", (workspace_id, wf["name"] if wf else str(workflow_id)))
-            row = cursor.fetchone()
+        # Check for state resumption (only for predefined workflows, not adhoc runs)
+        row = None
+        if str(workflow_id) != "adhoc_run":
+            with db.get_connection() as conn:
+                cursor = conn.cursor()
+                cursor.execute("SELECT id FROM automation_tasks WHERE workspace_id = ? AND goal = ? AND status IN ('FAILED', 'PAUSED')", (workspace_id, wf["name"] if wf else str(workflow_id)))
+                row = cursor.fetchone()
 
         if row and payload.get("resume", True):
             task_id = row[0]

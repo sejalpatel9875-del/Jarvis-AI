@@ -5,6 +5,16 @@ from memory.manager import _default_manager, save_turn, get_recent, save_prefere
 class TestV48MemoryUpgrades(unittest.TestCase):
     """Comprehensively validates the separated, semantic unified memory manager."""
 
+    def setUp(self):
+        import memory.database as db
+        with db.get_connection() as conn:
+            conn.execute("DELETE FROM task_memory")
+            conn.execute("DELETE FROM knowledge_memory")
+            conn.execute("DELETE FROM long_term_memory")
+            conn.execute("DELETE FROM conversation_memory")
+            conn.execute("DELETE FROM user_preferences_memory")
+            conn.execute("DELETE FROM preferences")
+
     def test_conversation_memory(self):
         # Save a unique conversation turn
         user_msg = f"Can you index my project reports? {uuid.uuid4().hex[:6]}"

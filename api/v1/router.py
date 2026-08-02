@@ -81,8 +81,25 @@ from memory.storage import load_recent
 import agents.memory as memory_agent
 from core.agent_os import agent_os
 from services.desktop_assistant import desktop_assistant
+from mcp.manager import mcp_manager
+from mcp.models import MCPClientConfig
 
 v1_router = APIRouter(prefix="/v1")
+
+
+class MCPConnectPayload(BaseModel):
+    name: str
+    transport: str = "http"
+    url: str = ""
+    auth_token: str = ""
+    timeout_seconds: float = 10.0
+
+
+class MCPExecutePayload(BaseModel):
+    server_name: str
+    tool_name: str
+    arguments: dict = {}
+    fallback_internal_tool: str = ""
 
 
 class DesktopActionPayload(BaseModel):
@@ -700,3 +717,44 @@ def confirm_desktop_action_endpoint(payload: DesktopActionPayload):
 @v1_router.get("/desktop/audit-logs", tags=["v5.3 Desktop Assistant"])
 def get_desktop_audit_logs_endpoint(limit: int = 50):
     return {"audit_logs": audit_logger.get_logs(limit=limit)}
+
+
+# Model Context Protocol (MCP) Endpoints
+@v1_router.get("/mcp/servers", tags=["v5.6 Model Context Protocol"])
+def list_mcp_servers_endpoint():
+    return {"servers": mcp_manager.get_server_statuses()}
+
+
+@v1_router.post("/mcp/servers/connect", tags=["v5.6 Model Context Protocol"])
+def connect_mcp_server_endpoint(payload: MCPConnectPayload):
+    cfg = MCPClientConfig(
+        name=payload.name,
+        transport=payload.transport,
+        url=payload.url,
+        auth_token=payload.auth_token if payload.auth_token else None,
+        timeout_seconds=payload.timeout_seconds,
+    )
+    success = mcp_manager.add_server(cfg)
+    return {
+        "success": success,
+        "server_name": payload.name,
+        "status": "CONNECTED" if success else "FAILED",
+    }
+
+
+@v1_router.get("/mcp/tools", tags=["v5.6 Model Context Protocol"])
+def list_mcp_tools_endpoint():
+    return {"tools": mcp_manager.discover_all_tools()}
+
+
+@v1_router.post("/mcp/tools/execute", tags=["v5.6 Model Context Protocol"])
+def execute_mcp_tool_endpoint(payload: MCPExecutePayload):
+    res = mcp_manager.execute_tool_with_fallback(
+        payload.server_name,
+        payload.tool_name,
+        payload.arguments,
+        fallback_internal_tool=(
+            payload.fallback_internal_tool if payload.fallback_internal_tool else None
+        ),
+    )
+    return res.to_dict()

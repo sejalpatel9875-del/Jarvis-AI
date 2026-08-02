@@ -34,7 +34,7 @@ Namespaces:
 """
 
 from fastapi import APIRouter, File, HTTPException, UploadFile
-from fastapi.responses import StreamingResponse
+from fastapi.responses import Response, StreamingResponse
 from pydantic import BaseModel
 from api.routes import (
     health_check,
@@ -85,6 +85,7 @@ from mcp.manager import mcp_manager
 from mcp.models import MCPClientConfig
 from security.auth_manager import auth_manager
 from security.secrets_manager import secrets_manager
+from services.enterprise_dashboard import enterprise_dashboard
 
 v1_router = APIRouter(prefix="/v1")
 
@@ -790,3 +791,22 @@ def refresh_token_endpoint(payload: AuthRefreshPayload):
     if not res:
         raise HTTPException(status_code=401, detail="Invalid or expired refresh token.")
     return res
+
+
+# Enterprise Dashboard Endpoints
+@v1_router.get("/dashboard/telemetry", tags=["v5.8 Enterprise Dashboard"])
+def get_enterprise_dashboard_telemetry_endpoint(workspace_id: str = "default"):
+    return enterprise_dashboard.get_full_telemetry(workspace_id)
+
+
+@v1_router.get("/dashboard/export", tags=["v5.8 Enterprise Dashboard"])
+def export_enterprise_dashboard_report_endpoint(
+    format: str = "json", workspace_id: str = "default"
+):
+    report_content = enterprise_dashboard.export_report(format, workspace_id)
+    media_type = (
+        "text/markdown"
+        if format == "markdown"
+        else ("text/csv" if format == "csv" else "application/json")
+    )
+    return Response(content=report_content, media_type=media_type)

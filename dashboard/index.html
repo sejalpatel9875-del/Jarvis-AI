@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>JARVIS Enterprise AI OS Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <!-- Header Bar -->
+  <header class="header">
+    <div class="logo-group">
+      <span class="orb-pulsar">●</span>
+      <h1>J.A.R.V.I.S. ENTERPRISE AI OS</h1>
+      <span class="version-badge">v5.8.0</span>
+    </div>
+
+    <div class="controls-group">
+      <input type="text" id="global-search" placeholder="🔍 Search widgets (Cmd+K)..." />
+      <select id="workspace-select">
+        <option value="default">Default Workspace</option>
+        <option value="sales">Sales & Revenue</option>
+        <option value="engineering">Engineering AI</option>
+      </select>
+      <button id="export-report-btn" class="btn primary">📥 Export Report (Cmd+E)</button>
+      <button id="theme-toggle-btn" class="btn icon">🌙</button>
+    </div>
+  </header>
+
+  <!-- Live Status Heartbeat Bar -->
+  <div class="heartbeat-bar">
+    <div class="status-indicator">
+      <span class="status-dot green"></span>
+      <span id="system-status-text">System Status: HEALTHY</span>
+    </div>
+    <div class="telemetry-info">
+      <span>Auto-Refresh: <strong>5s</strong></span>
+      <span id="last-updated-text">Last Updated: Just now</span>
+    </div>
+  </div>
+
+  <!-- Dashboard 11-Widget Grid -->
+  <main class="dashboard-grid">
+
+    <!-- 1. AI Usage -->
+    <div class="widget-card" data-widget="ai_usage">
+      <div class="card-header">
+        <h3>🤖 AI Usage Telemetry</h3>
+        <span class="card-badge">Live</span>
+      </div>
+      <div class="metric-value" id="ai-total-requests">14,250</div>
+      <div class="metric-label">Total API Requests (3.84M Tokens)</div>
+      <canvas id="ai-usage-chart" height="120"></canvas>
+    </div>
+
+    <!-- 2. Automation Status -->
+    <div class="widget-card" data-widget="automation_status">
+      <div class="card-header">
+        <h3>⚡ Automation Status</h3>
+        <span class="card-badge success">99.4% Pass</span>
+      </div>
+      <div class="metric-value" id="active-workflows">14 Active</div>
+      <div class="metric-label">328 Executions Today • 6 Scheduled Crons</div>
+      <div class="progress-bar-bg"><div class="progress-bar-fill" style="width: 99.4%;"></div></div>
+    </div>
+
+    <!-- 3. Task Queue -->
+    <div class="widget-card" data-widget="task_queue">
+      <div class="card-header">
+        <h3>📋 Multi-Agent Task Queue</h3>
+        <span class="card-badge">8 Agents</span>
+      </div>
+      <div class="metric-value" id="active-tasks">0 Running</div>
+      <div class="metric-label">184 Completed • 2 Retried</div>
+    </div>
+
+    <!-- 4. Notifications Feed -->
+    <div class="widget-card" data-widget="notifications">
+      <div class="card-header">
+        <h3>🔔 Notifications & Activity</h3>
+        <span class="card-badge warning" id="unread-count">3 Unread</span>
+      </div>
+      <div class="feed-list" id="activity-feed-list">
+        <div class="feed-item">Synchronized Room DB for Mobile App</div>
+        <div class="feed-item">Executive Report generated for Q3 Strategy</div>
+      </div>
+    </div>
+
+    <!-- 5. Knowledge Base -->
+    <div class="widget-card" data-widget="knowledge_base">
+      <div class="card-header">
+        <h3>🧠 Knowledge Base RAG</h3>
+      </div>
+      <div class="metric-value" id="indexed-docs">42 Documents</div>
+      <div class="metric-label">1,850 Vector Chunks • 128.4 MB Storage</div>
+    </div>
+
+    <!-- 6. Memory Statistics -->
+    <div class="widget-card" data-widget="memory_stats">
+      <div class="card-header">
+        <h3>💾 Memory Statistics</h3>
+      </div>
+      <div class="metric-value" id="saved-facts">156 Memory Facts</div>
+      <div class="metric-label">Vector Search Latency: 18.5 ms</div>
+    </div>
+
+    <!-- 7. Performance Metrics -->
+    <div class="widget-card" data-widget="performance_metrics">
+      <div class="card-header">
+        <h3>📈 System Telemetry</h3>
+      </div>
+      <div class="metric-value" id="cpu-telemetry">CPU: 24.5%</div>
+      <div class="metric-label">RAM: 412.8 MB • API Latency: 42ms</div>
+      <canvas id="perf-chart" height="100"></canvas>
+    </div>
+
+    <!-- 8. API Health -->
+    <div class="widget-card" data-widget="api_health">
+      <div class="card-header">
+        <h3>🟢 API Subsystem Health</h3>
+      </div>
+      <ul class="health-list">
+        <li>Railway Cloud Container <span class="badge-tag green">ONLINE</span></li>
+        <li>Redis Cache Layer <span class="badge-tag green">ACTIVE</span></li>
+        <li>Vector Embedding Store <span class="badge-tag green">READY</span></li>
+      </ul>
+    </div>
+
+    <!-- 9. User Activity -->
+    <div class="widget-card" data-widget="user_activity">
+      <div class="card-header">
+        <h3>👥 Audit & User Activity</h3>
+      </div>
+      <div class="metric-value" id="active-users">12 Active Users</div>
+      <div class="metric-label">Audit Logs Velocity: Normal</div>
+    </div>
+
+    <!-- 10. Workflow Analytics -->
+    <div class="widget-card" data-widget="workflow_analytics">
+      <div class="card-header">
+        <h3>📊 Workflow Analytics</h3>
+      </div>
+      <div class="metric-value">620 ms Avg</div>
+      <div class="metric-label">0.8% Retry Rate • Top Trigger: DOC_UPLOADED</div>
+    </div>
+
+    <!-- 11. Revenue Dashboard (Future-Ready) -->
+    <div class="widget-card highlight" data-widget="revenue_dashboard">
+      <div class="card-header">
+        <h3>💰 Revenue & Billing (Future-Ready)</h3>
+        <span class="card-badge gold">Enterprise</span>
+      </div>
+      <div class="metric-value" id="mrr-value">$12,500 MRR</div>
+      <div class="metric-label">Pipeline Value: $50,000 USD • 24 Active Subscriptions</div>
+      <canvas id="revenue-chart" height="110"></canvas>
+    </div>
+
+  </main>
+
+  <!-- Export Report Modal -->
+  <div id="export-modal" class="modal-overlay hidden">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>📥 Export Executive Report</h3>
+        <button id="close-modal-btn" class="btn icon">✕</button>
+      </div>
+      <div class="modal-body">
+        <label>Select Format:</label>
+        <select id="export-format">
+          <option value="json">JSON Data Stream</option>
+          <option value="markdown">Executive Markdown Report</option>
+          <option value="csv">CSV Spreadsheet Summary</option>
+        </select>
+        <button id="confirm-export-btn" class="btn primary full-width">Download Report</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

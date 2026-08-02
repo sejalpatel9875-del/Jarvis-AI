@@ -1,15 +1,17 @@
-import time
 import datetime
 import json
-import re
 import os
-from typing import Dict, Any, List, Union, Optional
+import re
+import time
+from typing import Any
+
 import memory.database as db
 from services.automation_engine import automation_engine
-from services.logger import logger
-from tools.registry import tool_registry
-from tools.base import ToolResult
 from services.calendar_reminders import calendar_reminders
+from services.logger import logger
+from tools.base import ToolResult
+from tools.registry import tool_registry
+
 
 def init_execution_db():
     with db.get_connection() as conn:
@@ -25,17 +27,19 @@ def init_execution_db():
             )
         """)
 
+
 init_execution_db()
+
 
 class StepExecutorEngine:
     """Step Executor with resource registration capability for rollback support."""
-    
+
     def interpolate_args(self, args: dict, context: dict) -> dict:
         """Interpolates results from previous steps, e.g. {{step1_result}}."""
         interpolated = {}
         for k, v in args.items():
             if isinstance(v, str):
-                matches = re.findall(r'\{\{step(\d+)_result\}\}', v)
+                matches = re.findall(r"\{\{step(\d+)_result\}\}", v)
                 for m in matches:
                     step_val = context.get(f"step_{m}", "")
                     v = v.replace(f"{{{{step{m}_result}}}}", str(step_val))
@@ -52,7 +56,9 @@ class StepExecutorEngine:
         step_num = step.get("step_number")
         desc = step.get("description", "Solve step")
 
-        logger.info("EXEC_STEP", f"Starting Step {step_num} ({desc}): capability={capability}, args={args}")
+        logger.info(
+            "EXEC_STEP", f"Starting Step {step_num} ({desc}): capability={capability}, args={args}"
+        )
 
         # Initialize created_resources track list if not present
         if "created_resources" not in context:
@@ -62,7 +68,7 @@ class StepExecutorEngine:
             # 1. Browser Capability
             if capability in ["browser", "web_scrape"]:
                 return tool_registry.execute("browser", **args)
-            
+
             # 2. Files Capability
             elif capability in ["files", "file_manager"]:
                 act = args.get("action", "create").strip().lower()
@@ -70,24 +76,29 @@ class StepExecutorEngine:
                 res = tool_registry.execute("file_manager", **args)
                 if res.success and act in ["create", "write"]:
                     # Track created file path for rollback
-                    context["created_resources"].append({"type": "file", "path": os.path.abspath(path)})
+                    context["created_resources"].append(
+                        {"type": "file", "path": os.path.abspath(path)}
+                    )
                 return res
-            
+
             # 3. Email Capability
             elif capability in ["email"]:
                 return tool_registry.execute("email", **args)
-            
+
             # 4. Search Capability
             elif capability in ["search", "web_search"]:
                 return tool_registry.execute("search", **args)
-            
+
             # 5. Weather Capability
             elif capability in ["weather"]:
                 res = tool_registry.execute("weather", **args)
                 if res.success:
                     return res
-                return ToolResult(success=True, result=f"Weather in {args.get('city', 'Prayagraj')} is 28 degrees and clear, Bhaiya.")
-            
+                return ToolResult(
+                    success=True,
+                    result=f"Weather in {args.get('city', 'Prayagraj')} is 28 degrees and clear, Bhaiya.",
+                )
+
             # 6. Calendar Capability
             elif capability in ["calendar"]:
                 act = args.get("action", "create").strip().lower()
@@ -96,11 +107,13 @@ class StepExecutorEngine:
                         workspace_id="default",
                         title=args.get("title", "Reminder"),
                         due_at=args.get("due_at", ""),
-                        assignee=args.get("assignee", "me")
+                        assignee=args.get("assignee", "me"),
                     )
                     success = res_dict.get("success", False)
                     if success and "id" in res_dict:
-                        context["created_resources"].append({"type": "reminder", "id": res_dict["id"]})
+                        context["created_resources"].append(
+                            {"type": "reminder", "id": res_dict["id"]}
+                        )
                     return ToolResult(success=success, result=str(res_dict))
                 elif act == "list":
                     res_list = calendar_reminders.list_reminders()
@@ -109,7 +122,7 @@ class StepExecutorEngine:
                     res_dict = calendar_reminders.complete_reminder(int(args.get("reminder_id", 0)))
                     return ToolResult(success=res_dict.get("success", False), result=str(res_dict))
                 return ToolResult(success=False, result=f"Unknown calendar action: {act}")
-            
+
             # 7. Notes Capability
             elif capability in ["notes"]:
                 act = args.get("action", "create").strip().lower()
@@ -119,50 +132,68 @@ class StepExecutorEngine:
                         cursor = conn.cursor()
                         cursor.execute(
                             "INSERT INTO user_notes (title, content, created_at) VALUES (?, ?, ?)",
-                            (args.get("title", "Untitled Note"), args.get("content", ""), ts)
+                            (args.get("title", "Untitled Note"), args.get("content", ""), ts),
                         )
                         note_id = cursor.lastrowid
                     context["created_resources"].append({"type": "note", "id": note_id})
-                    return ToolResult(success=True, result=f"Successfully created note ID {note_id}: {args.get('title')}")
+                    return ToolResult(
+                        success=True,
+                        result=f"Successfully created note ID {note_id}: {args.get('title')}",
+                    )
                 elif act == "read":
                     note_id = args.get("note_id")
                     with db.get_connection() as conn:
                         cursor = conn.cursor()
-                        cursor.execute("SELECT id, title, content, created_at FROM user_notes WHERE id = ? OR title = ?", (str(note_id), str(note_id)))
+                        cursor.execute(
+                            "SELECT id, title, content, created_at FROM user_notes WHERE id = ? OR title = ?",
+                            (str(note_id), str(note_id)),
+                        )
                         row = cursor.fetchone()
                     if row:
                         r = dict(row)
-                        return ToolResult(success=True, result=f"Note ID {r['id']}: {r['title']}\nContent: {r['content']}")
+                        return ToolResult(
+                            success=True,
+                            result=f"Note ID {r['id']}: {r['title']}\nContent: {r['content']}",
+                        )
                     return ToolResult(success=False, result=f"Note '{note_id}' not found.")
                 else:
                     with db.get_connection() as conn:
                         cursor = conn.cursor()
-                        cursor.execute("SELECT id, title, created_at FROM user_notes ORDER BY id DESC LIMIT 10")
+                        cursor.execute(
+                            "SELECT id, title, created_at FROM user_notes ORDER BY id DESC LIMIT 10"
+                        )
                         rows = cursor.fetchall()
                     notes_list = [f"ID {r['id']}: {r['title']}" for r in rows]
-                    return ToolResult(success=True, result=f"Notes: {', '.join(notes_list) if notes_list else 'No notes yet.'}")
-            
+                    return ToolResult(
+                        success=True,
+                        result=f"Notes: {', '.join(notes_list) if notes_list else 'No notes yet.'}",
+                    )
+
             # 8. Notifications Capability
             elif capability in ["notifications"]:
                 from services.notifications import notification_service
+
                 res_dict = notification_service.send_notification(
                     user_id="default",
                     title=args.get("title", "Notice"),
-                    message=args.get("message", "Message")
+                    message=args.get("message", "Message"),
                 )
                 return ToolResult(success=res_dict.get("success", False), result=str(res_dict))
-            
+
             # Fallback direct LLM execution
             else:
                 from services.llm_router import ask_ai
+
                 prompt = args.get("prompt", desc)
                 reply = ask_ai(prompt)
                 return ToolResult(success=True, result=reply)
         except Exception as e:
             return ToolResult(success=False, result=str(e))
 
+
 class StepValidatorEngine:
     """Step Validator Engine."""
+
     def validate(self, capability: str, run_result: ToolResult) -> dict:
         if not run_result.success:
             return {"valid": False, "error": run_result.result or "Step execution failed."}
@@ -173,9 +204,10 @@ class StepValidatorEngine:
             return {"valid": False, "error": "Validation rejected: infinite loop signature."}
         return {"valid": True, "error": None}
 
+
 class WorkflowExecutionEngine:
     """Production-Grade, Stateful, Pause/Resume/Cancel/Rollback Automation Engine."""
-    
+
     def __init__(self):
         self.executor = StepExecutorEngine()
         self.validator = StepValidatorEngine()
@@ -185,71 +217,92 @@ class WorkflowExecutionEngine:
         cfg = wf.get("config") or {}
         steps = []
         if action == "send_email":
-            steps.append({
-                "step_number": 1,
-                "capability": "email",
-                "description": f"Send automated email to {cfg.get('recipient', 'user@example.com')}",
-                "args": {
-                    "recipient": cfg.get("recipient") or payload.get("recipient") or "user@example.com",
-                    "subject": cfg.get("subject") or payload.get("subject") or "Automated Workflow Notice",
-                    "body": cfg.get("body") or payload.get("body") or "Workflow executed successfully."
+            steps.append(
+                {
+                    "step_number": 1,
+                    "capability": "email",
+                    "description": f"Send automated email to {cfg.get('recipient', 'user@example.com')}",
+                    "args": {
+                        "recipient": cfg.get("recipient")
+                        or payload.get("recipient")
+                        or "user@example.com",
+                        "subject": cfg.get("subject")
+                        or payload.get("subject")
+                        or "Automated Workflow Notice",
+                        "body": cfg.get("body")
+                        or payload.get("body")
+                        or "Workflow executed successfully.",
+                    },
                 }
-            })
+            )
         elif action == "generate_report":
-            steps.append({
-                "step_number": 1,
-                "capability": "search",
-                "description": "Gather search facts for report topic",
-                "args": {
-                    "query": cfg.get("topic") or payload.get("topic") or "AI automation trends",
-                    "engine": "google"
+            steps.append(
+                {
+                    "step_number": 1,
+                    "capability": "search",
+                    "description": "Gather search facts for report topic",
+                    "args": {
+                        "query": cfg.get("topic") or payload.get("topic") or "AI automation trends",
+                        "engine": "google",
+                    },
                 }
-            })
-            steps.append({
-                "step_number": 2,
-                "capability": "notes",
-                "description": "Create an executive report note",
-                "args": {
-                    "action": "create",
-                    "title": f"Report: {cfg.get('title', 'AI Trends')}",
-                    "content": "Drafting summary details based on Search: {{step1_result}}"
+            )
+            steps.append(
+                {
+                    "step_number": 2,
+                    "capability": "notes",
+                    "description": "Create an executive report note",
+                    "args": {
+                        "action": "create",
+                        "title": f"Report: {cfg.get('title', 'AI Trends')}",
+                        "content": "Drafting summary details based on Search: {{step1_result}}",
+                    },
                 }
-            })
+            )
         elif action == "create_issue":
-            steps.append({
-                "step_number": 1,
-                "capability": "files",
-                "description": "Log workflow issue onto disk log file",
-                "args": {
-                    "action": "create",
-                    "path": "logs/workflow_issues.log",
-                    "content": f"Issue detected at {datetime.datetime.now()}: {cfg.get('details', 'General issue')}"
+            steps.append(
+                {
+                    "step_number": 1,
+                    "capability": "files",
+                    "description": "Log workflow issue onto disk log file",
+                    "args": {
+                        "action": "create",
+                        "path": "logs/workflow_issues.log",
+                        "content": f"Issue detected at {datetime.datetime.now()}: {cfg.get('details', 'General issue')}",
+                    },
                 }
-            })
+            )
         elif action == "index_document":
-            steps.append({
-                "step_number": 1,
-                "capability": "files",
-                "description": "Read document for indexing",
-                "args": {
-                    "action": "read",
-                    "path": cfg.get("document_path") or payload.get("document_path") or "document.txt"
+            steps.append(
+                {
+                    "step_number": 1,
+                    "capability": "files",
+                    "description": "Read document for indexing",
+                    "args": {
+                        "action": "read",
+                        "path": cfg.get("document_path")
+                        or payload.get("document_path")
+                        or "document.txt",
+                    },
                 }
-            })
+            )
         else:
-            steps.append({
-                "step_number": 1,
-                "capability": "notifications",
-                "description": "Dispatch general workflow run notification",
-                "args": {
-                    "title": wf.get("name", "Workflow Run"),
-                    "message": f"Action {action} completed successfully."
+            steps.append(
+                {
+                    "step_number": 1,
+                    "capability": "notifications",
+                    "description": "Dispatch general workflow run notification",
+                    "args": {
+                        "title": wf.get("name", "Workflow Run"),
+                        "message": f"Action {action} completed successfully.",
+                    },
                 }
-            })
+            )
         return steps
 
     def plan_natural_language_goal(self, goal: str) -> list:
         from services.llm_router import ask_ai
+
         prompt = (
             f"You are the master workflow planner for Jarvis. Given the user goal, plan a step-by-step sequence of tool executions.\n"
             f"Goal: '{goal}'\n\n"
@@ -268,24 +321,28 @@ class WorkflowExecutionEngine:
         )
         try:
             res_text = ask_ai(prompt)
-            res_text = re.sub(r'```json|```', '', res_text).strip()
+            res_text = re.sub(r"```json|```", "", res_text).strip()
             steps = json.loads(res_text)
             if isinstance(steps, list) and len(steps) > 0:
                 return steps
         except Exception as e:
             print(f"[Planner Error] Failed to generate plan via LLM: {e}")
-        
-        return [{
-            "step_number": 1,
-            "capability": "notifications",
-            "description": f"Automate goal: {goal}",
-            "args": {"title": "Automation Goal", "message": f"Processing: {goal}"}
-        }]
 
-    def execute_workflow(self, workflow_id: Union[int, str], payload: Dict[str, Any] = None) -> Dict[str, Any]:
+        return [
+            {
+                "step_number": 1,
+                "capability": "notifications",
+                "description": f"Automate goal: {goal}",
+                "args": {"title": "Automation Goal", "message": f"Processing: {goal}"},
+            }
+        ]
+
+    def execute_workflow(
+        self, workflow_id: int | str, payload: dict[str, Any] = None
+    ) -> dict[str, Any]:
         """Orchestrates Workflow -> Steps -> Execution -> Validation -> Completion pipeline."""
         payload = payload or {}
-        
+
         # Immediate simulated error handler for unit testing compatibility
         if payload.get("simulate_error"):
             ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -298,7 +355,14 @@ class WorkflowExecutionEngine:
                     (workflow_id, workspace_id, status, duration_ms, error_message, executed_at)
                     VALUES (?, ?, ?, ?, ?, ?)
                     """,
-                    (str(workflow_id), str(payload.get("workspace_id", "default")), "FAILED", 15.5, err_msg, ts)
+                    (
+                        str(workflow_id),
+                        str(payload.get("workspace_id", "default")),
+                        "FAILED",
+                        15.5,
+                        err_msg,
+                        ts,
+                    ),
                 )
                 exec_id = cursor.lastrowid
             return {
@@ -310,7 +374,7 @@ class WorkflowExecutionEngine:
                 "duration_ms": 15.5,
                 "retry_count": payload.get("retry_count", 0),
                 "error_message": err_msg,
-                "executed_at": ts
+                "executed_at": ts,
             }
 
         wf = automation_engine.get_workflow(workflow_id)
@@ -322,7 +386,10 @@ class WorkflowExecutionEngine:
         if str(workflow_id) != "adhoc_run":
             with db.get_connection() as conn:
                 cursor = conn.cursor()
-                cursor.execute("SELECT id FROM automation_tasks WHERE workspace_id = ? AND goal = ? AND status IN ('FAILED', 'PAUSED')", (workspace_id, wf["name"] if wf else str(workflow_id)))
+                cursor.execute(
+                    "SELECT id FROM automation_tasks WHERE workspace_id = ? AND goal = ? AND status IN ('FAILED', 'PAUSED')",
+                    (workspace_id, wf["name"] if wf else str(workflow_id)),
+                )
                 row = cursor.fetchone()
 
         if row and payload.get("resume", True):
@@ -336,13 +403,15 @@ class WorkflowExecutionEngine:
             elif "goal" in payload:
                 steps = self.plan_natural_language_goal(payload["goal"])
             else:
-                steps = [{
-                    "step_number": 1,
-                    "capability": "notifications",
-                    "description": "Standard empty run",
-                    "args": {"title": "Notice", "message": "No workflow action required."}
-                }]
-            
+                steps = [
+                    {
+                        "step_number": 1,
+                        "capability": "notifications",
+                        "description": "Standard empty run",
+                        "args": {"title": "Notice", "message": "No workflow action required."},
+                    }
+                ]
+
             with db.get_connection() as conn:
                 cursor = conn.cursor()
                 cursor.execute(
@@ -351,12 +420,18 @@ class WorkflowExecutionEngine:
                     (workspace_id, goal, current_step_index, status, steps_json, context_json, created_at, updated_at)
                     VALUES (?, ?, 0, 'PENDING', ?, '{}', ?, ?)
                     """,
-                    (workspace_id, wf["name"] if wf else str(workflow_id), json.dumps(steps), ts, ts)
+                    (
+                        workspace_id,
+                        wf["name"] if wf else str(workflow_id),
+                        json.dumps(steps),
+                        ts,
+                        ts,
+                    ),
                 )
                 task_id = cursor.lastrowid
 
         res = self.execute_automation_task(task_id)
-        
+
         # Override output structures to keep existing test assertions aligned
         res["workflow_id"] = workflow_id
         if "retry_count" in payload:
@@ -368,21 +443,27 @@ class WorkflowExecutionEngine:
 
         return res
 
-    def execute_automation_task(self, task_id: int) -> Dict[str, Any]:
+    def execute_automation_task(self, task_id: int) -> dict[str, Any]:
         with db.get_connection() as conn:
             cursor = conn.cursor()
-            cursor.execute("SELECT id, workspace_id, goal, current_step_index, status, steps_json, context_json FROM automation_tasks WHERE id = ?", (task_id,))
+            cursor.execute(
+                "SELECT id, workspace_id, goal, current_step_index, status, steps_json, context_json FROM automation_tasks WHERE id = ?",
+                (task_id,),
+            )
             row = cursor.fetchone()
 
         if not row:
-            return {"success": False, "status": "FAILED", "error_message": f"Automation task ID {task_id} not found."}
+            return {
+                "success": False,
+                "status": "FAILED",
+                "error_message": f"Automation task ID {task_id} not found.",
+            }
 
         task = dict(row)
         steps = json.loads(task["steps_json"])
         context = json.loads(task["context_json"])
         start_idx = task["current_step_index"]
         workspace_id = task["workspace_id"]
-        goal = task["goal"]
 
         if task["status"] == "CANCELLED":
             return {
@@ -393,7 +474,7 @@ class WorkflowExecutionEngine:
                 "progress": f"{round((start_idx / len(steps)) * 100, 1)}%",
                 "current_step_index": start_idx,
                 "results": context,
-                "error_message": "Task execution was cancelled."
+                "error_message": "Task execution was cancelled.",
             }
         if task["status"] == "PAUSED":
             return {
@@ -404,7 +485,7 @@ class WorkflowExecutionEngine:
                 "progress": f"{round((start_idx / len(steps)) * 100, 1)}%",
                 "current_step_index": start_idx,
                 "results": context,
-                "error_message": "Task execution is paused."
+                "error_message": "Task execution is paused.",
             }
 
         if len(steps) > 50:
@@ -426,7 +507,7 @@ class WorkflowExecutionEngine:
                 cursor = conn.cursor()
                 cursor.execute("SELECT status FROM automation_tasks WHERE id = ?", (task_id,))
                 current_status = cursor.fetchone()[0]
-            
+
             if current_status == "PAUSED":
                 logger.info("EXEC_PAUSED", f"Task {task_id} execution paused at step index {idx}.")
                 return {
@@ -436,10 +517,12 @@ class WorkflowExecutionEngine:
                     "status": "PAUSED",
                     "progress": f"{round((idx / len(steps)) * 100, 1)}%",
                     "current_step_index": idx,
-                    "results": context
+                    "results": context,
                 }
             if current_status == "CANCELLED":
-                logger.info("EXEC_CANCELLED", f"Task {task_id} execution cancelled at step index {idx}.")
+                logger.info(
+                    "EXEC_CANCELLED", f"Task {task_id} execution cancelled at step index {idx}."
+                )
                 return {
                     "success": False,
                     "execution_id": task_id,
@@ -447,7 +530,7 @@ class WorkflowExecutionEngine:
                     "status": "CANCELLED",
                     "progress": f"{round((idx / len(steps)) * 100, 1)}%",
                     "current_step_index": idx,
-                    "results": context
+                    "results": context,
                 }
 
             step = steps[idx]
@@ -460,7 +543,10 @@ class WorkflowExecutionEngine:
             for attempt in range(1, 4):  # Max retries = 3
                 if attempt > 1:
                     backoff = 0.3 * (2 ** (attempt - 2))
-                    logger.warning("RETRY_STEP", f"Retrying Step {step_num}, Attempt {attempt}/3 after {backoff}s backoff...")
+                    logger.warning(
+                        "RETRY_STEP",
+                        f"Retrying Step {step_num}, Attempt {attempt}/3 after {backoff}s backoff...",
+                    )
                     time.sleep(backoff)
 
                 res = self.executor.execute_step(step, context)
@@ -486,7 +572,9 @@ class WorkflowExecutionEngine:
 
         duration_ms = round((time.perf_counter() - start_time) * 1000, 2)
         status = "SUCCESS" if success else "FAILED"
-        self.update_task_state(task_id, len(steps) if success else last_idx, status, context, error_msg)
+        self.update_task_state(
+            task_id, len(steps) if success else last_idx, status, context, error_msg
+        )
 
         # Log into workflow_execution_logs table
         ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -497,7 +585,7 @@ class WorkflowExecutionEngine:
                 (workflow_id, workspace_id, status, duration_ms, error_message, executed_at)
                 VALUES (?, ?, ?, ?, ?, ?)
                 """,
-                (str(task_id), str(workspace_id), status, duration_ms, error_msg, ts)
+                (str(task_id), str(workspace_id), status, duration_ms, error_msg, ts),
             )
 
         return {
@@ -511,50 +599,58 @@ class WorkflowExecutionEngine:
             "retry_count": 3 if not success else 0,
             "error_message": error_msg,
             "executed_at": ts,
-            "results": context
+            "results": context,
         }
 
     # ============================================================
     # Stateful Asynchronous Controls: Pause / Resume / Cancel / Retry
     # ============================================================
 
-    def pause_workflow(self, task_id: int) -> Dict[str, Any]:
+    def pause_workflow(self, task_id: int) -> dict[str, Any]:
         """Pauses a running workflow execution task."""
         logger.info("PAUSE_WORKFLOW", f"Requesting PAUSE for task ID {task_id}...")
         with db.get_connection() as conn:
-            conn.execute("UPDATE automation_tasks SET status = 'PAUSED', updated_at = ? WHERE id = ?", 
-                         (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), task_id))
+            conn.execute(
+                "UPDATE automation_tasks SET status = 'PAUSED', updated_at = ? WHERE id = ?",
+                (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), task_id),
+            )
         return {"success": True, "task_id": task_id, "status": "PAUSED"}
 
-    def resume_workflow(self, task_id: int) -> Dict[str, Any]:
+    def resume_workflow(self, task_id: int) -> dict[str, Any]:
         """Resumes a paused or failed workflow execution task."""
         logger.info("RESUME_WORKFLOW", f"Requesting RESUME for task ID {task_id}...")
         with db.get_connection() as conn:
-            conn.execute("UPDATE automation_tasks SET status = 'RUNNING', updated_at = ? WHERE id = ?", 
-                         (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), task_id))
+            conn.execute(
+                "UPDATE automation_tasks SET status = 'RUNNING', updated_at = ? WHERE id = ?",
+                (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), task_id),
+            )
         return self.execute_automation_task(task_id)
 
-    def cancel_workflow(self, task_id: int) -> Dict[str, Any]:
+    def cancel_workflow(self, task_id: int) -> dict[str, Any]:
         """Cancels a running workflow execution task."""
         logger.info("CANCEL_WORKFLOW", f"Requesting CANCEL for task ID {task_id}...")
         with db.get_connection() as conn:
-            conn.execute("UPDATE automation_tasks SET status = 'CANCELLED', updated_at = ? WHERE id = ?", 
-                         (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), task_id))
+            conn.execute(
+                "UPDATE automation_tasks SET status = 'CANCELLED', updated_at = ? WHERE id = ?",
+                (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), task_id),
+            )
         return {"success": True, "task_id": task_id, "status": "CANCELLED"}
 
-    def retry_workflow(self, task_id: int) -> Dict[str, Any]:
+    def retry_workflow(self, task_id: int) -> dict[str, Any]:
         """Retries a failed workflow execution task by restarting it or retrying the failed step."""
         logger.info("RETRY_WORKFLOW", f"Requesting RETRY for task ID {task_id}...")
         with db.get_connection() as conn:
-            conn.execute("UPDATE automation_tasks SET status = 'RUNNING', updated_at = ? WHERE id = ?", 
-                         (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), task_id))
+            conn.execute(
+                "UPDATE automation_tasks SET status = 'RUNNING', updated_at = ? WHERE id = ?",
+                (datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), task_id),
+            )
         return self.execute_automation_task(task_id)
 
     # ============================================================
     # Compensation/Cleanup Engine: Rollback
     # ============================================================
 
-    def rollback_workflow(self, task_id: int) -> Dict[str, Any]:
+    def rollback_workflow(self, task_id: int) -> dict[str, Any]:
         """
         Iterates backwards through all completed actions and cleans up created resources
         (files, database notes, and reminders) to avoid dangling side effects.
@@ -563,19 +659,22 @@ class WorkflowExecutionEngine:
             cursor = conn.cursor()
             cursor.execute("SELECT id, context_json FROM automation_tasks WHERE id = ?", (task_id,))
             row = cursor.fetchone()
-        
+
         if not row:
             return {"success": False, "error": "Automation task not found."}
-        
+
         task = dict(row)
         context = json.loads(task["context_json"])
         resources = context.get("created_resources", [])
-        
-        logger.info("ROLLBACK_WORKFLOW", f"Initiating compensation rollback for task ID {task_id}. Cleaning up {len(resources)} resources...")
-        
+
+        logger.info(
+            "ROLLBACK_WORKFLOW",
+            f"Initiating compensation rollback for task ID {task_id}. Cleaning up {len(resources)} resources...",
+        )
+
         rolled_back = []
         errors = []
-        
+
         # Rollback created resources in reverse chronological order
         for res in reversed(resources):
             rtype = res.get("type")
@@ -602,19 +701,23 @@ class WorkflowExecutionEngine:
 
         # Clear tracked resources and reset state to FAILED
         context["created_resources"] = []
-        self.update_task_state(task_id, 0, "FAILED", context, f"Rolled back: {', '.join(rolled_back)}. Errors: {', '.join(errors)}")
+        self.update_task_state(
+            task_id,
+            0,
+            "FAILED",
+            context,
+            f"Rolled back: {', '.join(rolled_back)}. Errors: {', '.join(errors)}",
+        )
 
-        return {
-            "success": len(errors) == 0,
-            "rolled_back": rolled_back,
-            "errors": errors
-        }
+        return {"success": len(errors) == 0, "rolled_back": rolled_back, "errors": errors}
 
     # ============================================================
     # Helpers & History Queries
     # ============================================================
 
-    def update_task_state(self, task_id: int, step_idx: int, status: str, context: dict, error_msg: str = ""):
+    def update_task_state(
+        self, task_id: int, step_idx: int, status: str, context: dict, error_msg: str = ""
+    ):
         ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
         with db.get_connection() as conn:
             if step_idx >= 0:
@@ -624,7 +727,7 @@ class WorkflowExecutionEngine:
                     SET current_step_index = ?, status = ?, context_json = ?, error_message = ?, updated_at = ?
                     WHERE id = ?
                     """,
-                    (step_idx, status, json.dumps(context or {}), error_msg, ts, task_id)
+                    (step_idx, status, json.dumps(context or {}), error_msg, ts, task_id),
                 )
             else:
                 conn.execute(
@@ -633,19 +736,22 @@ class WorkflowExecutionEngine:
                     SET status = ?, updated_at = ?
                     WHERE id = ?
                     """,
-                    (status, ts, task_id)
+                    (status, ts, task_id),
                 )
 
-    def get_execution_history(self, workspace_id: str = "default", limit: int = 30) -> List[Dict[str, Any]]:
+    def get_execution_history(
+        self, workspace_id: str = "default", limit: int = 30
+    ) -> list[dict[str, Any]]:
         """Retrieves workflow execution log history for a workspace."""
         with db.get_connection() as conn:
             cursor = conn.cursor()
             cursor.execute(
                 "SELECT id, workflow_id, workspace_id, status, duration_ms, error_message, executed_at FROM workflow_execution_logs WHERE workspace_id = ? ORDER BY id DESC LIMIT ?",
-                (str(workspace_id), limit)
+                (str(workspace_id), limit),
             )
             rows = cursor.fetchall()
         return [dict(r) for r in rows]
+
 
 # Global Singleton
 workflow_execution = WorkflowExecutionEngine()

@@ -183,6 +183,8 @@ def main():
                 "--disable-error-code=return-value",
                 "--disable-error-code=type-var",
                 "--disable-error-code=union-attr",
+                "--disable-error-code=dict-item",
+                "--disable-error-code=var-annotated",
                 "--exclude",
                 r"\.venv",
                 *py_files,

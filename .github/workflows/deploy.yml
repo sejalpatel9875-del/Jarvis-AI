@@ -1,0 +1,105 @@
+name: J.A.R.V.I.S. AI OS — Production Release CI/CD & Automated Rollback
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch:
+
+jobs:
+  quality-gate-and-tests:
+    name: 🛡️ Pre-Commit Verification & Test Suite
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code Repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install ruff black mypy
+
+      - name: Execute Full Verification Suite
+        run: |
+          python verify_commit.py
+
+  docker-build-check:
+    name: 🐳 Production Docker Build Validation
+    needs: quality-gate-and-tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Docker Container Image
+        run: |
+          docker build -t jarvis-ai-os:v5.1.0 .
+
+  deploy-railway-backend:
+    name: 🚀 Deploy Railway Backend
+    needs: docker-build-check
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Trigger Railway Deployment Webhook
+        env:
+          RAILWAY_DEPLOY_WEBHOOK: ${{ secrets.RAILWAY_DEPLOY_WEBHOOK }}
+        run: |
+          if [ -n "$RAILWAY_DEPLOY_WEBHOOK" ]; then
+            echo "Triggering Railway Production Build..."
+            curl -s -X POST "$RAILWAY_DEPLOY_WEBHOOK"
+          else
+            echo "RAILWAY_DEPLOY_WEBHOOK secret not set. Skipping webhook trigger."
+          fi
+
+  deploy-vercel-frontend:
+    name: 🌐 Deploy Vercel Frontend
+    needs: deploy-railway-backend
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Trigger Vercel Deploy Hook
+        env:
+          VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -n "$VERCEL_DEPLOY_HOOK" ]; then
+            echo "Triggering Vercel Frontend Deployment..."
+            curl -s -X POST "$VERCEL_DEPLOY_HOOK"
+          else
+            echo "VERCEL_DEPLOY_HOOK secret not set. Skipping webhook trigger."
+          fi
+
+  post-deployment-validation:
+    name: 🔍 Automated Post-Deployment Health & Rollback Check
+    needs: [deploy-railway-backend, deploy-vercel-frontend]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+
+    steps:
+      - name: Validate Production Health Endpoint
+        run: |
+          echo "Waiting 20 seconds for deployment to settle..."
+          sleep 20
+          
+          HEALTH_URL="https://jarvis-ai-production-eb13.up.railway.app/api/v1/health"
+          echo "Pinging Health Endpoint: $HEALTH_URL"
+          
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$HEALTH_URL" || echo "000")
+          echo "HTTP Status Code: $STATUS"
+          
+          if [ "$STATUS" -eq 200 ]; then
+            echo "✅ Production Backend is HEALTHY!"
+          else
+            echo "❌ Production Health Check Failed (HTTP $STATUS)! Initiating Rollback Alert."
+            exit 1
+          fi

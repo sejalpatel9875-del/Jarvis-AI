@@ -80,8 +80,16 @@ from services.voice_pipeline import voice_pipeline
 from memory.storage import load_recent
 import agents.memory as memory_agent
 from core.agent_os import agent_os
+from services.desktop_assistant import desktop_assistant
 
 v1_router = APIRouter(prefix="/v1")
+
+
+class DesktopActionPayload(BaseModel):
+    action: str
+    params: dict = {}
+    is_confirmed: bool = False
+    task_id: str = ""
 
 
 class AgentOSDispatchPayload(BaseModel):
@@ -672,3 +680,23 @@ def list_agent_os_agents():
 @v1_router.post("/agent-os/cancel/{task_id}", tags=["v5.2 Multi-Agent AI OS"])
 def cancel_agent_os_task(task_id: str):
     return agent_os.cancel_goal(task_id)
+
+
+# Desktop Productivity Assistant Endpoints
+@v1_router.post("/desktop/execute", tags=["v5.3 Desktop Assistant"])
+def execute_desktop_action_endpoint(payload: DesktopActionPayload):
+    return desktop_assistant.execute_desktop_action(
+        payload.action, payload.params, payload.is_confirmed, payload.task_id
+    )
+
+
+@v1_router.post("/desktop/confirm", tags=["v5.3 Desktop Assistant"])
+def confirm_desktop_action_endpoint(payload: DesktopActionPayload):
+    return desktop_assistant.execute_desktop_action(
+        payload.action, payload.params, is_confirmed=True, task_id=payload.task_id
+    )
+
+
+@v1_router.get("/desktop/audit-logs", tags=["v5.3 Desktop Assistant"])
+def get_desktop_audit_logs_endpoint(limit: int = 50):
+    return {"audit_logs": audit_logger.get_logs(limit=limit)}

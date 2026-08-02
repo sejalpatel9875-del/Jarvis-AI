@@ -13,13 +13,14 @@ Dependencies:
 
 import os
 import sys
-import time
 import threading
 from datetime import datetime
 from typing import Optional
 
+
 class JarvisLogger:
     """Thread-safe Structured Daily Logger for Jarvis."""
+
     _instance = None
     _lock = threading.Lock()
 
@@ -31,14 +32,20 @@ class JarvisLogger:
             return cls._instance
 
     def _init_logger(self):
-        self.logs_dir = os.path.join(os.getcwd(), "logs")
+        # Vercel Functions expose a read-only application bundle; /tmp is the
+        # ephemeral writable location available during an invocation.
+        self.logs_dir = (
+            "/tmp/jarvis-logs" if os.getenv("VERCEL") else os.path.join(os.getcwd(), "logs")
+        )
         os.makedirs(self.logs_dir, exist_ok=True)
 
     def _get_log_file_path(self) -> str:
         today_str = datetime.now().strftime("%Y-%m-%d")
         return os.path.join(self.logs_dir, f"{today_str}.log")
 
-    def _write_entry(self, level: str, category: str, message: str, latency: Optional[float] = None):
+    def _write_entry(
+        self, level: str, category: str, message: str, latency: Optional[float] = None
+    ):
         timestamp = datetime.now().strftime("%H:%M:%S.%f")[:-3]
         lat_str = f" | Latency: {latency:.2f}s" if latency is not None else ""
         formatted_line = f"[{timestamp}] [{level}] [{category}] {message}{lat_str}\n"
@@ -65,8 +72,13 @@ class JarvisLogger:
     def planner(self, message: str):
         self._write_entry("INFO", "PLANNER", message)
 
-    def executor(self, tool_name: str, status: str, result_snippet: str, latency: Optional[float] = None):
-        self._write_entry("INFO", f"EXECUTOR:{tool_name}", f"Status={status} -> {result_snippet}", latency)
+    def executor(
+        self, tool_name: str, status: str, result_snippet: str, latency: Optional[float] = None
+    ):
+        self._write_entry(
+            "INFO", f"EXECUTOR:{tool_name}", f"Status={status} -> {result_snippet}", latency
+        )
+
 
 # Global Logger Singleton
 logger = JarvisLogger()

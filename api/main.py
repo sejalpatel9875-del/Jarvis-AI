@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from api.routes import router
 from api.v1.router import v1_router
 from api.middleware import SecurityHeadersMiddleware
+from security.middleware import SecurityMiddleware
 from core.constants import APP_NAME, APP_VERSION
 
 app = FastAPI(
@@ -28,6 +29,8 @@ app = FastAPI(
     docs_url="/docs",
     redoc_url="/redoc",
 )
+
+app.add_middleware(SecurityMiddleware)
 
 
 class WebLoginRequest(BaseModel):

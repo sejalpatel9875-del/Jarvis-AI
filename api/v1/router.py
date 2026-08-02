@@ -83,8 +83,19 @@ from core.agent_os import agent_os
 from services.desktop_assistant import desktop_assistant
 from mcp.manager import mcp_manager
 from mcp.models import MCPClientConfig
+from security.auth_manager import auth_manager
+from security.secrets_manager import secrets_manager
 
 v1_router = APIRouter(prefix="/v1")
+
+
+class AuthLoginPayload(BaseModel):
+    user_id: str
+    password: str = "default_pass"
+
+
+class AuthRefreshPayload(BaseModel):
+    refresh_token: str
 
 
 class MCPConnectPayload(BaseModel):
@@ -758,3 +769,24 @@ def execute_mcp_tool_endpoint(payload: MCPExecutePayload):
         ),
     )
     return res.to_dict()
+
+
+# Enterprise Security Authentication Endpoints
+@v1_router.post("/auth/login", tags=["v5.7 Enterprise Security"])
+def login_endpoint(payload: AuthLoginPayload):
+    access_token = auth_manager.create_access_token(payload.user_id)
+    refresh_token = auth_manager.create_refresh_token(payload.user_id)
+    return {
+        "access_token": access_token,
+        "refresh_token": refresh_token,
+        "token_type": "bearer",
+        "expires_in": 900,
+    }
+
+
+@v1_router.post("/auth/refresh", tags=["v5.7 Enterprise Security"])
+def refresh_token_endpoint(payload: AuthRefreshPayload):
+    res = auth_manager.rotate_refresh_token(payload.refresh_token)
+    if not res:
+        raise HTTPException(status_code=401, detail="Invalid or expired refresh token.")
+    return res

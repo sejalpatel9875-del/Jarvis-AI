@@ -39,7 +39,7 @@ class TestV52MultiAgentOS(unittest.TestCase):
 
     def test_ceo_agent(self):
         plan = ceo_agent.generate_strategic_plan("Market Expansion")
-        self.assertIn("Pillars", str(plan))
+        self.assertIn("pillars", plan)
         summary = ceo_agent.generate_executive_summary("Q3 Financials")
         self.assertIn("Executive Summary", summary["summary"])
 

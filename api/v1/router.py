@@ -86,8 +86,22 @@ from mcp.models import MCPClientConfig
 from security.auth_manager import auth_manager
 from security.secrets_manager import secrets_manager
 from services.enterprise_dashboard import enterprise_dashboard
+from commercial.subscriptions import subscription_manager
+from commercial.feature_flags import feature_flags
+from commercial.backups import backup_manager
+from commercial.admin_panel import admin_panel
 
 v1_router = APIRouter(prefix="/v1")
+
+
+class SubscriptionUpgradePayload(BaseModel):
+    org_id: str
+    new_tier: str
+
+
+class AdminOverrideLimitPayload(BaseModel):
+    org_id: str
+    new_limit: int
 
 
 class AuthLoginPayload(BaseModel):
@@ -810,3 +824,34 @@ def export_enterprise_dashboard_report_endpoint(
         else ("text/csv" if format == "csv" else "application/json")
     )
     return Response(content=report_content, media_type=media_type)
+
+
+# Commercial SaaS Platform Endpoints
+@v1_router.get("/commercial/subscriptions", tags=["v6.0 Commercial Platform"])
+def get_commercial_subscription_endpoint(org_id: str = "default"):
+    return subscription_manager.get_subscription(org_id)
+
+
+@v1_router.post("/commercial/subscriptions/upgrade", tags=["v6.0 Commercial Platform"])
+def upgrade_commercial_subscription_endpoint(payload: SubscriptionUpgradePayload):
+    return subscription_manager.upgrade_subscription(payload.org_id, payload.new_tier)
+
+
+@v1_router.get("/commercial/feature-flags", tags=["v6.0 Commercial Platform"])
+def get_commercial_feature_flags_endpoint(org_id: str = "default"):
+    return {"feature_flags": feature_flags.get_all_flags(org_id)}
+
+
+@v1_router.post("/commercial/admin/override-limit", tags=["v6.0 Commercial Platform"])
+def override_admin_limit_endpoint(payload: AdminOverrideLimitPayload):
+    return admin_panel.override_usage_limit(payload.org_id, payload.new_limit)
+
+
+@v1_router.post("/commercial/backups/create", tags=["v6.0 Commercial Platform"])
+def create_commercial_backup_endpoint(backup_type: str = "FULL"):
+    return backup_manager.create_backup(backup_type)
+
+
+@v1_router.get("/commercial/disaster-recovery/status", tags=["v6.0 Commercial Platform"])
+def get_disaster_recovery_status_endpoint():
+    return backup_manager.get_disaster_recovery_status()

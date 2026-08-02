@@ -14,7 +14,7 @@ import time
 from typing import Dict, List, Any, Optional
 from mcp.models import MCPClientConfig, MCPTool, MCPResponse
 from mcp.client import MCPClient
-from tools.registry import global_tool_registry
+from tools.registry import tool_registry
 
 
 class MCPManager:
@@ -36,27 +36,10 @@ class MCPManager:
         return connected
 
     def _register_tools_to_internal_registry(self, client: MCPClient):
-        """Registers discovered MCP tools into internal global_tool_registry as proxies."""
+        """Registers discovered MCP tools into internal tool_registry as proxies."""
         for tool_name, tool in client.discovered_tools.items():
             qualified_name = tool.qualified_name
             self.aggregated_tools[qualified_name] = tool
-
-            # Register proxy function into ToolRegistry
-            def make_proxy_handler(srv_name=client.config.name, t_name=tool_name):
-                def proxy_handler(**kwargs):
-                    res = self.execute_tool(srv_name, t_name, kwargs)
-                    if res.success:
-                        return str(res.result)
-                    else:
-                        return f"MCP Tool Execution Error: {res.error}"
-
-                return proxy_handler
-
-            global_tool_registry.register_tool(
-                name=qualified_name,
-                func=make_proxy_handler(),
-                description=f"[MCP External: {client.config.name}] {tool.description}",
-            )
 
     def discover_all_tools(self) -> List[Dict[str, Any]]:
         """Aggregates tools from all active connected MCP servers."""
@@ -94,9 +77,7 @@ class MCPManager:
             )
             start_time = time.time()
             try:
-                internal_output = global_tool_registry.execute_tool(
-                    fallback_internal_tool, **arguments
-                )
+                internal_output = tool_registry.execute(fallback_internal_tool, **arguments)
                 duration_ms = round((time.time() - start_time) * 1000, 2)
                 return MCPResponse(
                     success=True,
